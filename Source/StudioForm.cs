@@ -660,6 +660,85 @@ namespace PacePilot
                 if(dialog.ShowDialog(this)==DialogResult.OK && list.SelectedItem is Tuple<string,string>)AddProfile(((Tuple<string,string>)list.SelectedItem).Item2);
             }
         }
+
+        void ScanInstalledGames() { ScanInstalledGames(true); }
+        void ScanInstalledGames(bool announce)
+        {
+            if(testing||gameScanPending)return;
+            gameScanPending=true;
+            BackgroundWorker scan=new BackgroundWorker();
+            scan.DoWork+=(sender,e)=>e.Result=GameDiscovery.Scan();
+            scan.RunWorkerCompleted+=(sender,e)=>
+            {
+                gameScanPending=false;
+                if(IsDisposed)return;
+                if(e.Error!=null)
+                {
+                    if(announce)MessageBox.Show(this,e.Error.Message,L("Game scan","اسکن بازی‌ها"));
+                    return;
+                }
+                List<DetectedGame> games=e.Result as List<DetectedGame>;
+                if(games==null)return;
+                int added=0;
+                foreach(DetectedGame game in games)
+                {
+                    string exe=Path.GetFileName(game.Exe);
+                    GameProfile item=settings.Games.FirstOrDefault(p=>String.Equals(p.Exe,exe,StringComparison.OrdinalIgnoreCase));
+                    if(item==null)
+                    {
+                        settings.Games.Add(new GameProfile{
+                            Exe=exe,FullPath=game.Exe,DisplayName=game.Title,Platform=game.Platform,Limit=60});
+                        added++;
+                    }
+                    else if(String.Equals(item.FullPath,game.Exe,StringComparison.OrdinalIgnoreCase))
+                    { item.DisplayName=game.Title;item.Platform=game.Platform; }
+                }
+                if(added>0)Persist();
+                if(added>0 && (currentPage=="profiles"||currentPage=="dashboard"))DrawPage();
+                if(announce)MessageBox.Show(this,
+                    L("Games detected: ","بازی‌های شناسایی‌شده: ")+games.Count+"\n"+
+                    L("New profiles: ","پروفایل‌های جدید: ")+added+"\n"+
+                    L("Steam, Epic Games and GOG were checked. Some games need manual selection.",
+                      "کتابخانه‌های Steam، Epic و GOG بررسی شدند؛ برخی بازی‌ها به انتخاب دستی نیاز دارند."),
+                    L("Game library","کتابخانه بازی‌ها"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+            };
+            scan.RunWorkerAsync();
+        }
+        void CheckUpdates(bool manual)
+        {
+            if(testing||updateCheckPending)return;
+            if(!manual&&settings.LastUpdateCheckUtc>DateTime.UtcNow.AddHours(-24))return;
+            updateCheckPending=true;
+            BackgroundWorker worker=new BackgroundWorker();
+            worker.DoWork+=(sender,e)=>e.Result=GitHubUpdates.Check();
+            worker.RunWorkerCompleted+=(sender,e)=>
+            {
+                updateCheckPending=false;
+                if(IsDisposed)return;
+                if(e.Error!=null)
+                {
+                    if(manual)MessageBox.Show(this,
+                        L("Cannot contact GitHub: ","اتصال به گیت‌هاب برقرار نشد: ")+e.Error.Message,
+                        L("Update check","بررسی بروزرسانی"),MessageBoxButtons.OK,MessageBoxIcon.Warning);
+                    return;
+                }
+                settings.LastUpdateCheckUtc=DateTime.UtcNow;Persist();
+                GitHubRelease release=e.Result as GitHubRelease;
+                if(GitHubUpdates.IsNewer(release))
+                {
+                    if(MessageBox.Show(this,
+                        L("A new PacePilot version is available: ","نسخه جدید PacePilot منتشر شده است: ")+release.Tag+"\n"+
+                        L("Open the official GitHub release?","صفحه رسمی دریافت در گیت‌هاب باز شود؟"),
+                        L("PacePilot update","بروزرسانی PacePilot"),
+                        MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes)
+                        OpenUrl(release.Url);
+                }
+                else if(manual)
+                    MessageBox.Show(this,L("PacePilot 2.1.0 is up to date.","PacePilot نسخه ۲.۱.۰ به‌روز است."),
+                        L("Update check","بررسی بروزرسانی"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+            };
+            worker.RunWorkerAsync();
+        }
         void RemoveProfile()
         {
             if(currentTarget=="Global")return;
