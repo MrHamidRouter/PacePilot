@@ -34,8 +34,10 @@ namespace PacePilot
     {
         public string Exe { get; set; }
         public string FullPath { get; set; }
+        public string DisplayName { get; set; }
+        public string Platform { get; set; }
         public int Limit { get; set; }
-        public GameProfile() { Exe = ""; FullPath = ""; Limit = 60; }
+        public GameProfile() { Exe = ""; FullPath = ""; DisplayName = ""; Platform = ""; Limit = 60; }
     }
 
     [Serializable]
@@ -50,6 +52,7 @@ namespace PacePilot
         public bool AlwaysOnTop { get; set; }
         public bool AutoSelectKnownGames { get; set; }
         public string LastTarget { get; set; }
+        public DateTime LastUpdateCheckUtc { get; set; }
         public List<GameProfile> Games { get; set; }
         public AppSettings()
         {
