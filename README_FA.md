@@ -6,7 +6,15 @@ PacePilot نرم‌افزار ویندوزی محدودسازی FPS با است�
 
 ### دریافت و نصب
 
-از بخش [GitHub Actions](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml)، آخرین اجرای موفق را باز و `PacePilot-Windows-x64-v2.0` را دانلود و استخراج کنید. فایل `PacePilot.exe` را اجرا کنید. اگر هنوز Build موفقی وجود ندارد، سورس پروژه را دریافت کرده و فقط `Start-PacePilot.cmd` را اجرا کنید تا ساخت، تست و اجرای برنامه با یک فرمان انجام شود.
+فقط یک ZIP نیاز است: `PacePilot-Windows-x64.zip` که از [GitHub Actions](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml) قابل دریافت است.
+
+فایل ZIP را استخراج کنید. اگر RTSS نصب نیست، یک بار **`Setup-PacePilot.bat`** را اجرا کنید؛ ابتدا وجود RTSS بررسی می‌شود، سپس در صورت نیاز فرمان زیر اجرا می‌شود و برنامه باز می‌شود:
+
+```bat
+winget install --id Guru3D.RTSS --exact --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+```
+
+اگر RTSS نصب است، کافی است `PacePilot.exe` را اجرا کنید. در صورت نیاز، ویندوز تأیید مجوز مدیر را درخواست می‌کند.
 
 ### امکانات
 
