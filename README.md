@@ -27,7 +27,17 @@ The EXE is a .NET Framework 4.x desktop app, not a self-extracting installer. RT
 
 Choose a theme and switch between **English** and **فارسی** from the left sidebar. Both selections are saved in `%APPDATA%\PacePilot\settings.xml` and restored on the next launch. All six skins use the **same real FPS/RTSS backend** and the same stored profiles. / زبان و طرح برنامه از پنل کناری قابل تغییر و ذخیره هستند.
 
-Reference images are in [`Docs/Previews`](Docs/Previews); they are concept illustrations and may have minor differences from actual native Windows controls.
+### UI preview gallery / پیش‌نمایش شش طرح
+
+| Neon Teal | Windows Blue | Cyber Purple |
+| --- | --- | --- |
+| ![Neon Teal](Docs/Previews/01-Neon-Teal.jpg) | ![Windows Blue](Docs/Previews/02-Windows-Blue.jpg) | ![Cyber Purple](Docs/Previews/03-Cyber-Purple.jpg) |
+
+| Racing Red | Esports Lime | Graphite Gold |
+| --- | --- | --- |
+| ![Racing Red](Docs/Previews/04-Racing-Red.jpg) | ![Esports Lime](Docs/Previews/05-Esports-Lime.jpg) | ![Graphite Gold](Docs/Previews/06-Graphite-Gold.jpg) |
+
+These concept screenshots guided the six **functional** WinForms layouts; actual UI controls may differ in small details. / این تصاویر نمونه طراحی هستند و ظاهر برخی کنترل‌های واقعی ویندوز ممکن است کمی متفاوت باشد.
 
 ## Main features / امکانات
 
