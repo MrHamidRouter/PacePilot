@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.ComponentModel;
 using System.Text;
+using System.Reflection;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -38,6 +39,56 @@ namespace PacePilot
         public static StudioTheme Find(string id) { return All.FirstOrDefault(x=>x.Id==id) ?? All[0]; }
     }
 
+    // Artwork from the six approved mockups is embedded into the EXE.
+    internal static class ThemeVisuals
+    {
+        static readonly Dictionary<string,Image> Cache=new Dictionary<string,Image>();
+        public static Image Get(string id)
+        {
+            lock(Cache)
+            {
+                if(Cache.ContainsKey(id))return Cache[id];
+                try
+                {
+                    using(Stream src=typeof(StudioForm).Assembly.GetManifestResourceStream("PacePilot.UI."+id))
+                    {
+                        if(src==null)return null;
+                        using(Image image=Image.FromStream(src)) Cache[id]=new Bitmap(image);
+                    }
+                    return Cache[id];
+                } catch {return null;}
+            }
+        }
+        public static Rectangle Crop(string id,bool side,Image image)
+        {
+            if(image==null)return Rectangle.Empty;
+            double x=.60,y=.05,w=.39,h=.20;
+            if(id=="teal"){x=side?0:.04;y=side?.42:.42;w=side?.19:.22;h=side?.35:.25;}
+            if(id=="light"){x=side?.80:.65;y=side?.50:.66;w=side?.19:.33;h=side?.43:.33;}
+            if(id=="purple"){x=side?0:.67;y=side?.52:.10;w=side?.19:.32;h=side?.45:.20;}
+            if(id=="racing"){x=side?0:.50;y=side?.46:.01;w=side?.18:.48;h=side?.43:.20;}
+            if(id=="lime"){x=side?0:.01;y=side?.52:.51;w=side?.19:.19;h=side?.45:.36;}
+            if(id=="gold"){x=side?0:.43;y=side?.58:0;w=side?.19:.55;h=side?.33:.12;}
+            return new Rectangle((int)(x*image.Width),(int)(y*image.Height),
+                Math.Max(1,(int)(w*image.Width)),Math.Max(1,(int)(h*image.Height)));
+        }
+        public static Bitmap Sidebar(StudioTheme theme)
+        {
+            Image image=Get(theme.Id);if(image==null)return null;
+            Bitmap bitmap=new Bitmap(360,900);
+            using(Graphics graphics=Graphics.FromImage(bitmap))
+            {
+                graphics.Clear(theme.Sidebar);
+                graphics.InterpolationMode=InterpolationMode.HighQualityBicubic;
+                graphics.DrawImage(image,new Rectangle(0,250,360,645),Crop(theme.Id,true,image),GraphicsUnit.Pixel);
+                using(LinearGradientBrush overlay=new LinearGradientBrush(new Rectangle(0,0,360,900),
+                    Color.FromArgb(theme.Light?245:244,theme.Sidebar),
+                    Color.FromArgb(theme.Light?195:112,theme.Sidebar),90))
+                    graphics.FillRectangle(overlay,0,0,360,900);
+            }
+            return bitmap;
+        }
+    }
     public sealed class StudioCard : Panel
     {
         public StudioTheme Theme;
@@ -47,6 +98,22 @@ namespace PacePilot
             base.OnPaint(e);
             e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
             using(Pen p=new Pen(Theme.Border)) e.Graphics.DrawRectangle(p,0,0,Width-1,Height-1);
+        }
+    }
+    public sealed class ThemeCard : StudioCard
+    {
+        public Image Artwork;
+        public Rectangle CropRectangle;
+        public ThemeCard(StudioTheme theme):base(theme){}
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            base.OnPaintBackground(e);
+            if(Artwork==null)return;
+            e.Graphics.InterpolationMode=InterpolationMode.HighQualityBicubic;
+            e.Graphics.DrawImage(Artwork,new Rectangle(0,0,Width,Height),CropRectangle,GraphicsUnit.Pixel);
+            using(LinearGradientBrush shade=new LinearGradientBrush(new Rectangle(0,0,Math.Max(1,Width),Math.Max(1,Height)),
+                Color.FromArgb(245,Theme.Panel),Color.FromArgb(70,Theme.Panel),0f))
+                e.Graphics.FillRectangle(shade,0,0,Width,Height);
         }
     }
     public sealed class StudioGraph : Control
@@ -108,6 +175,7 @@ namespace PacePilot
         string currentTarget="Global", currentPage="dashboard";
         bool rebuilding=false, finishing=false, prompted=false, installing=false;
         bool refreshPending=false;
+        bool gameScanPending=false,updateCheckPending=false;
         int applied=0;
         int lastNonZero=60;
         TableLayoutPanel shell;
@@ -134,7 +202,7 @@ namespace PacePilot
             ClientSize=new Size(1340,865); MinimumSize=new Size(950,665);
             Font=new Font("Segoe UI",9f); StartPosition=FormStartPosition.CenterScreen;
             AutoScaleMode=AutoScaleMode.Dpi;
-            Text="PacePilot Studio v2.0  |  Mr.HamidRouter";
+            Text="PacePilot Studio v2.1  |  Mr.HamidRouter";
             try { Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { Icon=SystemIcons.Application; }
             currentTarget=String.IsNullOrEmpty(settings.LastTarget)?"Global":settings.LastTarget;
             Build();
@@ -143,7 +211,7 @@ namespace PacePilot
                 InitializeRtss(); InitTray();
                 timer=new System.Windows.Forms.Timer(); timer.Interval=500; timer.Tick+=(s,e)=>UpdateLive(); timer.Start();
                 SetStartup(false);
-                Shown+=(s,e)=>BeginInvoke(new System.Action(AskInstall));
+                Shown+=(s,e)=>BeginInvoke(new System.Action(()=>{AskInstall();ScanInstalledGames(false);CheckUpdates(false);}));
             }
             TopMost=settings.AlwaysOnTop;
             if(startInTray && !testing) { WindowState=FormWindowState.Minimized; ShowInTaskbar=false; }
@@ -192,9 +260,10 @@ namespace PacePilot
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,sideWidth));
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); Controls.Add(shell);
             side=new Panel(); side.Dock=DockStyle.Fill; side.BackColor=theme.Sidebar;side.AutoScroll=true;
+            side.BackgroundImage=ThemeVisuals.Sidebar(theme);side.BackgroundImageLayout=ImageLayout.Stretch;
             side.Margin=Padding.Empty; shell.Controls.Add(side,0,0);
             TextAt(side,"◈ PacePilot","◈ PacePilot",20,20,198,40,19,true,theme.Accent);
-            TextAt(side,"FRAME CONTROL STUDIO","استودیو کنترل فریم",21,59,198,23,8,true,theme.Secondary);
+            TextAt(side,"PRECISION GAMING","ابزار حرفه‌ای گیمینگ",21,59,198,23,8,true,theme.Secondary);
             TextAt(side,"LANGUAGE / زبان","زبان / LANGUAGE",20,99,183,18,8,false,theme.Secondary);
             langBox=SelectBox(side,21,121,193,30,new string[]{"English","فارسی"},Fa?1:0);
             langBox.SelectedIndexChanged+=(s,e)=>{if(rebuilding)return; settings.LanguageCode=langBox.SelectedIndex==1?"fa":"en";Persist();Build();};
@@ -202,8 +271,8 @@ namespace PacePilot
             themeBox=SelectBox(side,21,187,193,32,StudioTheme.All.Select(x=>x.Display).ToArray(),Array.FindIndex(StudioTheme.All,x=>x.Id==theme.Id));
             themeBox.SelectedIndexChanged+=(s,e)=>{if(rebuilding||themeBox.SelectedIndex<0)return;settings.ThemeName=StudioTheme.All[themeBox.SelectedIndex].Id; theme=StudioTheme.Find(settings.ThemeName);Persist();Build();};
             string[] nav={"dashboard","profiles","settings","rtss","logs","about"};
-            string[] en={"Dashboard","Game Profiles","Preferences","RTSS & Tools","Diagnostics","About"};
-            string[] fa={"داشبورد","پروفایل بازی‌ها","تنظیمات","RTSS و ابزارها","گزارش و خطایابی","درباره برنامه"};
+            string[] en={"Dashboard","Game Library","Appearance & Settings","RTSS & Tools","Diagnostics","About"};
+            string[] fa={"داشبورد","کتابخانه بازی‌ها","ظاهر و تنظیمات","RTSS و ابزارها","گزارش و خطایابی","درباره برنامه"};
             string[] symbols={"⌂","▣","⚙","◉","≡","ⓘ"};
             for(int i=0;i<nav.Length;i++)
             {
@@ -213,7 +282,7 @@ namespace PacePilot
             }
             TextAt(side,"Developer:","توسعه‌دهنده:",22,573,194,23,9,false,theme.Secondary);
             TextAt(side,"Mr.HamidRouter","Mr.HamidRouter",22,596,194,28,11,true,theme.Accent);
-            TextAt(side,"Six live UI layouts","شش رابط کاربری واقعی",22,633,190,25,8,false,theme.Secondary);
+            TextAt(side,"Gaming Performance Utility","ابزار تخصصی عملکرد بازی",22,633,190,25,8,false,theme.Secondary);
             viewport=new Panel(); viewport.Dock=DockStyle.Fill; viewport.AutoScroll=true;viewport.BackColor=theme.Bg;viewport.Margin=Padding.Empty;
             shell.Controls.Add(viewport,1,0);
             canvas=new Panel(); canvas.Location=Point.Empty;canvas.BackColor=theme.Bg; viewport.Controls.Add(canvas);
@@ -264,6 +333,7 @@ namespace PacePilot
                 "محدودسازی FPS • پروفایل بازی • نمایش اطلاعات واقعی RTSS");
             int gap=12, top=98, height=0;
             int wide=w, left=(int)(w*0.59), right=w-left-gap;
+            if(theme.Layout!=3){MakeHero(x,top,wide,85);top+=97;}
             if(theme.Layout==1)
             {
                 MakeTarget(x,top,wide,148); MakeLimiter(x,top+160,wide,176);
@@ -312,8 +382,12 @@ namespace PacePilot
         }
         void MakeHero(int x,int y,int w,int h)
         {
-            StudioCard c=Card("SMOOTHER FRAMES. FASTER GAMES.","فریم روان‌تر، اجرای بهتر",x,y,w,h);
-            TextAt(c,"VELOCITY PERFORMANCE MODE","حالت عملکرد مسابقه‌ای",18,44,w-40,28,12,true,theme.Accent);
+            ThemeCard c=new ThemeCard(theme);
+            c.SetBounds(x,y,w,h);c.Artwork=ThemeVisuals.Get(theme.Id);
+            c.CropRectangle=ThemeVisuals.Crop(theme.Id,false,c.Artwork);
+            canvas.Controls.Add(c);
+            TextAt(c,"PACEPILOT   /   PRECISION GAMING","PacePilot  |  تجربه روان‌تر بازی",18,9,w-36,32,15,true,theme.Accent);
+            TextAt(c,"PERFORMANCE  •  PRECISION  •  CONTROL","عملکرد بهینه • کنترل دقیق • تجربه حرفه‌ای",19,41,w-39,25,10,true,theme.Ink);
         }
         void MakeTarget(int x,int y,int w,int h)
         {
