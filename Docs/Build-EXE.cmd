@@ -12,7 +12,7 @@ rem NEVER overwrite a running EXE. Produce a unique executable for each build.
 set "OUTPUT=Bin\PacePilot_v2.0_%RANDOM%_%RANDOM%_%RANDOM%.exe"
 if exist "Bin\last-build.txt" del /q "Bin\last-build.txt" >nul 2>&1
 echo Building PacePilot v2.0 to a new EXE (safe while older builds are running)...
-"%CSC%" /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /out:"%OUTPUT%" /win32icon:"Assets\PacePilot.ico" /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll "Source\Program.cs Source\StudioForm.cs"
+"%CSC%" /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /out:"%OUTPUT%" /win32icon:"Assets\PacePilot.ico" /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll "Source\Program.cs" "Source\StudioForm.cs"
 if errorlevel 1 (
   echo.
   echo BUILD FAILED. Please send the messages above.

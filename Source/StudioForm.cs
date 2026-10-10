@@ -288,9 +288,9 @@ namespace PacePilot
             }
             else if(theme.Layout==4)
             {
-                MakeTarget(x,top,left,145);MakeOptions(x+left+gap,top,right,145);
-                MakeLimiter(x,top+157,left,180);MakeStats(x+left+gap,top+157,right,180,false);
-                MakeGraph(x,top+350,wide,295);height=top+662;
+                MakeTarget(x,top,left,166);MakeOptions(x+left+gap,top,right,174);
+                MakeLimiter(x,top+186,left,181);MakeStats(x+left+gap,top+186,right,181,false);
+                MakeGraph(x,top+379,wide,295);height=top+693;
             }
             else if(theme.Layout==5)
             {
@@ -338,7 +338,7 @@ namespace PacePilot
         {
             StudioCard c=Card("FPS LIMITER","محدودکننده نرخ فریم",x,y,w,h);
             int[] numbers={30,40,60,90,120,144,165,240};
-            int cols=8;
+            int cols=(w<355 && h>=205)?4:8;
             int bx=17, by=47, bw=(w-34-6*(cols-1))/cols;
             for(int i=0;i<numbers.Length;i++)
             {
