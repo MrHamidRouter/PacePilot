@@ -24,10 +24,20 @@ jobs:
           $log = Get-Content "$env:TEMP\PacePilot-selftest.log" -Raw -ErrorAction Stop
           Write-Host $log
           if ($p.ExitCode -ne 0 -or -not $log.StartsWith('PASS:')) { throw 'UI self-test failed' }
-      - name: Publish standalone EXE artifact
+      - name: Pack a single ready-to-use Windows ZIP
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Path dist/package -Force | Out-Null
+          Copy-Item Bin/PacePilot.exe dist/package/PacePilot.exe
+          Copy-Item Setup-PacePilot.bat dist/package/Setup-PacePilot.bat
+          Copy-Item README_FA.md dist/package/README_FA.md
+          Copy-Item README_EN.md dist/package/README_EN.md
+          Compress-Archive -Path dist/package/* -DestinationPath dist/PacePilot-Windows-x64.zip -Force
+          if (-not (Test-Path dist/PacePilot-Windows-x64.zip)) { throw 'ZIP packaging failed' }
+      - name: Publish ready-to-use Windows ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: PacePilot-Windows-x64-v2.0
-          path: Bin/PacePilot.exe
+          name: PacePilot-Windows-x64-ZIP
+          path: dist/PacePilot-Windows-x64.zip
           if-no-files-found: error
           retention-days: 90
