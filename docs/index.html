@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a0d18">
+  <meta name="description" content="PacePilot — a free, open-source FPS limiter frontend for Windows with six custom themes, bilingual UI and RTSS integration. Developed by Mr.HamidRouter.">
+  <meta property="og:title" content="PacePilot — Take control of your frames">
+  <meta property="og:description" content="Six premium themes. Real RTSS FPS limiting. Windows 10/11. By Mr.HamidRouter.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mrhamidrouter.github.io/PacePilot/">
+  <link rel="canonical" href="https://mrhamidrouter.github.io/PacePilot/">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <title>PacePilot — FPS Control for Windows · Mr.HamidRouter</title>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <header class="site-header" id="top">
+    <a class="brand" href="#top" aria-label="PacePilot home">
+      <span class="brandmark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 29A17 17 0 1 1 33 29" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M20 23 31 10 25 28Z" fill="currentColor"/></svg></span>
+      <span>Pace<span class="accent-text">Pilot</span><small>STUDIO 2.0</small></span>
+    </a>
+    <nav class="top-nav" aria-label="Primary navigation">
+      <a href="#themes" data-i18n="navThemes">Themes</a>
+      <a href="#features" data-i18n="navFeatures">Features</a>
+      <a href="#start" data-i18n="navSetup">Get started</a>
+      <a href="https://github.com/MrHamidRouter/PacePilot" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+    <div class="top-actions">
+      <button class="language-toggle" id="languageToggle" type="button" aria-label="Switch to Persian">FA / EN</button>
+      <a class="top-download" href="https://github.com/MrHamidRouter/PacePilot/releases/latest/download/PacePilot-Windows-x64.zip"><span aria-hidden="true">↓</span> <span data-i18n="navDownload">Download</span></a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap" aria-labelledby="heroTitle">
+      <div class="hero-content">
+        <span class="eyebrow"><i class="live-dot" aria-hidden="true"></i><span data-i18n="eyebrow">FREE · OPEN SOURCE · WINDOWS 10/11</span></span>
+        <h1 id="heroTitle"><span data-i18n="hero1">Control your FPS.</span><br><span class="gradient-text" data-i18n="hero2">Own every frame.</span></h1>
+        <p class="hero-lead" data-i18n="heroDesc">Set a global or per-game frame limit, inspect actual FPS and frame times, and customize your workspace with six distinct dashboards. Built around RTSS, with no fake telemetry.</p>
+        <div class="hero-actions">
+          <a class="button primary" id="primaryDownload" href="https://github.com/MrHamidRouter/PacePilot/releases/latest/download/PacePilot-Windows-x64.zip"><span aria-hidden="true">↓</span> <span data-i18n="downloadZip">Download for Windows · ZIP</span></a>
+          <a class="button secondary" href="#themes"><span data-i18n="exploreThemes">Explore six themes</span> <span aria-hidden="true">→</span></a>
+        </div>
+        <p class="download-note" data-i18n="downloadNote">Extract ZIP and run PacePilot.exe, or use Setup-PacePilot.bat to install RTSS first if needed.</p>
+        <div class="hero-stats">
+          <div><strong>06</strong><span data-i18n="statThemes">UI themes</span></div>
+          <div><strong>02</strong><span data-i18n="statLang">Languages</span></div>
+          <div><strong>RTSS</strong><span data-i18n="statEngine">FPS backend</span></div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="visual-topline"><span class="pill"><span class="active-pulse"></span><span data-i18n="preview">DESIGN PREVIEW</span></span><span class="visual-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+        <div class="hero-screen"><img id="heroImage" src="https://raw.githubusercontent.com/MrHamidRouter/PacePilot/main/Docs/Previews/03-Cyber-Purple.jpg" width="1448" height="1086" alt="Cyber Purple dashboard design preview" loading="eager"></div>
+        <div class="visual-footer"><span><span class="visual-spark" aria-hidden="true">✦</span> PacePilot Studio</span><span id="heroThemeLabel">Cyber Purple</span></div>
+        <div class="floating-tag"><span aria-hidden="true">◈</span> <span data-i18n="sixDesigns">Six looks. One engine.</span></div>
+      </div>
+    </section>
+
+    <section class="wrap section themes-section" id="themes" aria-labelledby="themeTitle">
+      <div class="section-top"><div><span class="kicker" data-i18n="customization">PERSONALIZATION</span><h2 id="themeTitle" data-i18n="themeTitle">Your setup. Your style.</h2><p class="section-desc" data-i18n="themeDesc">Choose a visual concept below. The Windows app includes six switchable, functional themes; these illustrations are visual references, not exact screenshots.</p></div><span class="section-index">01 / 03</span></div>
+      <div class="theme-feature">
+        <div class="theme-preview"><img id="themeImage" src="https://raw.githubusercontent.com/MrHamidRouter/PacePilot/main/Docs/Previews/03-Cyber-Purple.jpg" width="1448" height="1086" alt="Selected PacePilot UI theme preview" loading="lazy"></div>
+        <div class="theme-side"><span class="theme-number" id="themeNumber">03 / 06</span><h3 id="themeName">Cyber Purple</h3><p id="themeDescription" data-i18n="themeCyberDescription">Futuristic deep indigo with electric purple detail.</p><div class="palette" id="themePalette" aria-label="Theme color palette"><i style="background:#100e38"></i><i style="background:#5b21b6"></i><i style="background:#a855f7"></i><i style="background:#23bafd"></i></div><div class="theme-controls"><button class="round-button" type="button" id="previousTheme" aria-label="Previous theme">←</button><button class="round-button" type="button" id="nextTheme" aria-label="Next theme">→</button></div></div>
+      </div>
+      <div class="theme-grid" id="themeGrid" role="group" aria-label="Select a theme">
+        <button type="button" class="theme-card" data-theme="0"><img src="https://raw.githubusercontent.com/MrHamidRouter/PacePilot/main/Docs/Previews/01-Neon-Teal.jpg" alt="Neon Teal theme" loading="lazy"><span><span data-i18n="themeTeal">Neon Teal</span><small>01</small></span></button>
+        <button type="button" class="theme-card" data-theme="1"><img src="https://raw.githubusercontent.com/MrHamidRouter/PacePilot/main/Docs/Previews/02-Windows-Blue.jpg" alt="Windows Blue theme" loading="lazy"><span><span data-i18n="themeBlue">Windows Blue</span><small>02</small></span></button>
+        <button type="button" class="theme-card selected" data-theme="2" aria-pressed="true"><img src="https://raw.githubusercontent.com/MrHamidRouter/PacePilot/main/Docs/Previews/03-Cyber-Purple.jpg" alt="Cyber Purple theme" loading="lazy"><span><span data-i18n="themeCyber">Cyber Purple</span><small>03</small></span></button>
+        <button type="button" class="theme-card" data-theme="3"><img src="https://raw.githubusercontent.com/MrHamidRouter/PacePilot/main/Docs/Previews/04-Racing-Red.jpg" alt="Racing Red theme" loading="lazy"><span><span data-i18n="themeRed">Racing Red</span><small>04</small></span></button>
+        <button type="button" class="theme-card" data-theme="4"><img src="https://raw.githubusercontent.com/MrHamidRouter/PacePilot/main/Docs/Previews/05-Esports-Lime.jpg" alt="Esports Lime theme" loading="lazy"><span><span data-i18n="themeLime">Esports Lime</span><small>05</small></span></button>
+        <button type="button" class="theme-card" data-theme="5"><img src="https://raw.githubusercontent.com/MrHamidRouter/PacePilot/main/Docs/Previews/06-Graphite-Gold.jpg" alt="Graphite Gold theme" loading="lazy"><span><span data-i18n="themeGold">Graphite Gold</span><small>06</small></span></button>
+      </div>
+    </section>
+
+    <section class="wrap section" id="features" aria-labelledby="featuresTitle">
+      <div class="section-top"><div><span class="kicker" data-i18n="builtForPlay">BUILT FOR PC GAMING</span><h2 id="featuresTitle" data-i18n="featuresTitle">Control without clutter.</h2><p class="section-desc" data-i18n="featuresDesc">Useful tools for everyday frame-rate management, without pretending to be a proprietary game engine.</p></div><span class="section-index">02 / 03</span></div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-icon">◎</span><h3 data-i18n="feature1Title">Precise FPS caps</h3><p data-i18n="feature1Body">Preset or custom limits, applied through separately installed RivaTuner Statistics Server.</p></article>
+        <article class="feature-card"><span class="feature-icon">▣</span><h3 data-i18n="feature2Title">Per-game profiles</h3><p data-i18n="feature2Body">Pick an executable or a running game, then store an individual limit.</p></article>
+        <article class="feature-card"><span class="feature-icon">⌁</span><h3 data-i18n="feature3Title">Measured telemetry</h3><p data-i18n="feature3Body">Read FPS and frame times from RTSS when supported. Missing data stays blank, not simulated.</p></article>
+        <article class="feature-card"><span class="feature-icon">⌘</span><h3 data-i18n="feature4Title">Fast shortcuts</h3><p data-i18n="feature4Body">Toggle and adjust the limit using global hotkeys while you play.</p></article>
+        <article class="feature-card"><span class="feature-icon">◧</span><h3 data-i18n="feature5Title">English + فارسی</h3><p data-i18n="feature5Body">Switch language and appearance from inside the app; your choices are remembered.</p></article>
+        <article class="feature-card"><span class="feature-icon">↯</span><h3 data-i18n="feature6Title">Assisted RTSS setup</h3><p data-i18n="feature6Body">Detect RTSS and, if absent, offer consent-based installation with winget.</p></article>
+      </div>
+    </section>
+
+    <section class="wrap section" id="start" aria-labelledby="setupTitle"><div class="section-top"><div><span class="kicker" data-i18n="quickStart">QUICK START</span><h2 id="setupTitle" data-i18n="setupTitle">From ZIP to game in three steps.</h2></div><span class="section-index">03 / 03</span></div>
+      <div class="steps"><div class="step"><b>01</b><h3 data-i18n="step1Title">Download</h3><p data-i18n="step1Body">Get the latest Windows ZIP from GitHub Releases.</p></div><div class="step"><b>02</b><h3 data-i18n="step2Title">Run</h3><p data-i18n="step2Body">Extract it and launch PacePilot.exe. No source compilation required.</p></div><div class="step"><b>03</b><h3 data-i18n="step3Title">Play</h3><p data-i18n="step3Body">If RTSS is missing, run Setup-PacePilot.bat once. Then choose your game and FPS target.</p></div></div>
+      <div class="final-callout"><div><span class="kicker" data-i18n="readyLabel">READY TO TRY?</span><h2 data-i18n="ctaTitle">Smoother pacing starts here.</h2><p data-i18n="ctaDesc">Free and open source. Built by Mr.HamidRouter.</p></div><div class="final-actions"><a href="https://github.com/MrHamidRouter/PacePilot/releases/latest/download/PacePilot-Windows-x64.zip" class="button primary"><span aria-hidden="true">↓</span> <span data-i18n="downloadZip">Download for Windows · ZIP</span></a><a class="quiet-link" href="https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml" target="_blank" rel="noopener" data-i18n="buildFallback">Build history / alternative download ↗</a></div></div>
+      <p class="disclaimer"><strong data-i18n="noteTitle">Important:</strong> <span data-i18n="noteText">PacePilot is an independent RTSS frontend, not affiliated with FramePacer, NVIDIA or Guru3D. NVIDIA Reflex, DLSS Frame Generation and FramePacer's proprietary injection/pacing engine are not included. Compatibility varies by game and anti-cheat system.</span></p>
+    </section>
+  </main>
+  <footer class="footer wrap"><div class="footer-brand"><span class="mini-mark">◈</span> PacePilot <span class="footer-version">Studio v2.0</span></div><div class="footer-links"><a href="https://github.com/MrHamidRouter/PacePilot/blob/main/README_FA.md">راهنمای فارسی</a><a href="https://github.com/MrHamidRouter/PacePilot/blob/main/README_EN.md">English README</a><a href="https://github.com/MrHamidRouter/PacePilot/issues" data-i18n="reportIssue">Report an issue</a><a href="https://github.com/MrHamidRouter/PacePilot">Source code ↗</a></div><p class="credits">Developer: <a href="https://github.com/MrHamidRouter" target="_blank" rel="noopener"><strong>Mr.HamidRouter</strong></a> · <span data-i18n="footerLicense">MIT licensed · Windows desktop software</span></p></footer>
+  <script src="app.js" defer></script>
+</body>
+</html>
