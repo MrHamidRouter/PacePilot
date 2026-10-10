@@ -8,11 +8,13 @@ PacePilot یک نرم‌افزار مستقل ویندوز برای کنترل F
 
 ## Download / دریافت نسخه اجرایی
 
-Go to [GitHub Actions](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml), open a **successful** Windows workflow run, download the `PacePilot-Windows-x64-v2.0` artifact, extract it and run the single `PacePilot.exe` file. Build artifacts may be unavailable until Windows CI succeeds. If none are available, clone the source and run `Start-PacePilot.cmd` on Windows.
+**One ZIP, no compiling. / فقط یک ZIP، بدون کامپایل**
 
-برای دانلود فایل EXE، وارد [Actions](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml) شوید، آخرین اجرای **موفق** را باز کنید و فایل `PacePilot-Windows-x64-v2.0` را از قسمت Artifacts دریافت کنید. پس از استخراج، فقط `PacePilot.exe` را اجرا کنید. اگر خروجی آماده موجود نیست، سورس را دانلود و فایل `Start-PacePilot.cmd` را روی ویندوز اجرا کنید.
+Get the `PacePilot-Windows-x64.zip` file from a successful [Windows build](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml). Extract it; run `PacePilot.exe` directly if RTSS is installed. Otherwise, run **`Setup-PacePilot.bat` once**. It checks RTSS, installs it via `winget` only when missing, and launches the EXE. Windows may request administrator confirmation.
 
-The EXE is a .NET Framework 4.x desktop app, not a self-extracting installer. RTSS must be installed separately (PacePilot offers installation on first run).
+فایل `PacePilot-Windows-x64.zip` را از [ساخت ویندوزی GitHub](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml) دریافت و استخراج کنید. اگر RTSS از قبل نصب است، `PacePilot.exe` را اجرا کنید؛ در غیر این صورت فقط **`Setup-PacePilot.bat`** را اجرا کنید تا RTSS بررسی و در صورت نیاز از طریق winget نصب شود و برنامه اجرا شود. ممکن است تأیید دسترسی مدیر ویندوز لازم باشد.
+
+The ZIP includes an EXE, one optional setup BAT and two language-specific READMEs; RTSS is downloaded from its package source and is **not** redistributed. Developer: **Mr.HamidRouter**.
 
 ## Six fully functional themes / شش طرح قابل‌استفاده
 
