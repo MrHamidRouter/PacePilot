@@ -1,57 +1,64 @@
-# PacePilot v1.4 — Windows FPS limiter / محدودکننده فریم ویندوز
+# PacePilot Studio 2.0 | نرم‌افزار کنترل فریم ویندوز
 
-**Developer / توسعه‌دهنده: Mr.HamidRouter**  
-**Languages / زبان‌ها: فارسی 🇮🇷 · English 🇬🇧**
+**Developer / توسعه‌دهنده: Mr.HamidRouter** · **Windows 10/11 x64** · **English / فارسی** · **MIT License**
 
-PacePilot is a free, independent **Windows desktop GUI for RTSS (RivaTuner Statistics Server)**. Its real FPS cap is provided by RTSS, not simulated by the UI. PacePilot is not affiliated with Guru3D, RTSS or FramePacer.
+PacePilot is an independent Windows FPS-limiter front end powered by **RivaTuner Statistics Server (RTSS)**. It offers **six fully functional dashboard designs**, per-game/global FPS caps, RTSS live telemetry, a measured frametime graph, persistent game profiles, global hotkeys, tray controls, and assisted RTSS installation.
 
-PacePilot یک برنامه مستقل ویندوزی برای کنترل محدودیت FPS از طریق RTSS است. محدودیت واقعی توسط RTSS اعمال می‌شود، نه اینکه فقط در رابط برنامه نمایش داده شود.
+PacePilot یک نرم‌افزار مستقل ویندوز برای کنترل FPS با استفاده از RTSS است. **شش طرح گرافیکی واقعی و قابل‌تغییر**، تنظیم محدودیت فریم برای هر بازی، نمودار زنده مبتنی بر اندازه‌گیری RTSS، پروفایل‌های ذخیره‌شده، میانبرهای سراسری، اجرای کنار ساعت و نصب هدایت‌شده RTSS دارد.
 
-## ⬇️ Download EXE / دانلود فایل اجرایی
+## Download / دریافت نسخه اجرایی
 
-1. Go to the [GitHub Actions page](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml).
-2. Open the latest successful **Windows EXE build and self-test** run.
-3. Download the artifact **PacePilot-Windows-x64-v1.4** and extract it.
-4. Run **PacePilot.exe**. **No Visual Studio, build script or source files needed for the end user.**
+Go to [GitHub Actions](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml), open a **successful** Windows workflow run, download the `PacePilot-Windows-x64-v2.0` artifact, extract it and run the single `PacePilot.exe` file. Build artifacts may be unavailable until Windows CI succeeds. If none are available, clone the source and run `Start-PacePilot.cmd` on Windows.
 
-برای نسخه آماده، از بخش Actions آخرین اجرای موفق را باز کنید و فایل خروجی **PacePilot-Windows-x64-v1.4** را دریافت کنید؛ سپس `PacePilot.exe` را مستقیم اجرا کنید. نیازی به اجرای CMD یا نصب ابزار برنامه‌نویسی نیست.
+برای دانلود فایل EXE، وارد [Actions](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml) شوید، آخرین اجرای **موفق** را باز کنید و فایل `PacePilot-Windows-x64-v2.0` را از قسمت Artifacts دریافت کنید. پس از استخراج، فقط `PacePilot.exe` را اجرا کنید. اگر خروجی آماده موجود نیست، سورس را دانلود و فایل `Start-PacePilot.cmd` را روی ویندوز اجرا کنید.
 
-**Source ZIP / سورس:** To build locally, extract the repository and run `Start-PacePilot.cmd` once on Windows 10/11 x64. This produces `Bin\PacePilot.exe` and runs the GUI self-test. / برای ساخت از سورس روی ویندوز، یک بار `Start-PacePilot.cmd` را اجرا کنید.
+The EXE is a .NET Framework 4.x desktop app, not a self-extracting installer. RTSS must be installed separately (PacePilot offers installation on first run).
 
-## 🛠️ Automatic RTSS setup / نصب خودکار RTSS
+## Six fully functional themes / شش طرح قابل‌استفاده
 
-If RTSS is absent when PacePilot opens, **PacePilot asks your permission** to download and install **`Guru3D.RTSS`** through Microsoft's Windows Package Manager (`winget`). Winget verifies the download against its package manifest. Approve the Windows UAC prompt if shown; PacePilot then rechecks the install and starts RTSS. Already-installed RTSS is reused without any reinstall.
+| Theme / طرح | Interface layout / چیدمان |
+| --- | --- |
+| Neon Teal / فیروزه‌ای | Wide game selector, main limit & statistics, full-width graph |
+| Windows Blue / سفید آبی | Spacious stacked Windows 11-inspired dashboard |
+| Cyber Purple / بنفش | Dedicated game column, FPS area and telemetry cards |
+| Racing Red / قرمز مسابقه‌ای | Hero banner, performance grid and chart |
+| Esports Lime / سبز گیمینگ | Competitive layout with side-by-side configuration |
+| Graphite Gold / مشکی طلایی | Two-column step-by-step controls and telemetry |
 
-در اولین اجرا، اگر RTSS نصب نباشد، PacePilot اجازه دانلود و نصب آن را می‌پرسد. با تأیید شما، بسته `Guru3D.RTSS` از طریق ابزار **winget** دانلود و نصب می‌شود. در صورت نمایش تأیید دسترسی Administrator، آن را بررسی و تأیید کنید. پس از نصب، برنامه RTSS را دوباره شناسایی و اجرا می‌کند. اگر RTSS از قبل موجود باشد، **هیچ نصب مجددی انجام نمی‌شود**.
+Choose a theme and switch between **English** and **فارسی** from the left sidebar. Both selections are saved in `%APPDATA%\PacePilot\settings.xml` and restored on the next launch. All six skins use the **same real FPS/RTSS backend** and the same stored profiles. / زبان و طرح برنامه از پنل کناری قابل تغییر و ذخیره هستند.
 
-If winget is unavailable, the user cancels, installation fails or Windows is offline, PacePilot offers the [official Guru3D download page](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/) and lets users select an existing installation folder. **We never bundle or redistribute RTSS binaries, fetch them from unknown sites, or bypass installer hash verification.** Installation requires an internet connection, `winget` support and possibly Windows administrator approval.
+Reference images are in [`Docs/Previews`](Docs/Previews); they are concept illustrations and may have minor differences from actual native Windows controls.
 
-اگر winget موجود نباشد، اینترنت قطع باشد یا نصب شکست بخورد، امکان رفتن به صفحه دانلود رسمی Guru3D و انتخاب دستی پوشه RTSS وجود دارد. فایل‌های RTSS در این مخزن بازنشر نمی‌شوند و بررسی امنیتی دانلود دور زده نمی‌شود.
+## Main features / امکانات
 
-## 🌐 Language / زبان
+- **FPS caps / محدودکننده فریم:** 30, 40, 60, 90, 120, 144, 165, 240 and custom 0–1000 FPS, 0 = unlimited.
+- **Global/per-game profiles / پروفایل اختصاصی هر بازی:** select a game executable or browse visible running processes; remember game-specific FPS values.
+- **Measured monitoring / پایش واقعی:** RTSS shared-memory FPS/frametime samples. Missing telemetry shows `--`, not invented readings.
+- **Runtime changes / تغییر حین بازی:** apply a new FPS setting via RTSS without reopening PacePilot. A particular game may still restrict external hooks.
+- **Hotkeys / میانبرها:** `Alt + Shift + L` toggle; `Alt + Shift + Up/Down` adjust FPS by 1.
+- **Tray & startup / کنار ساعت و استارت‌آپ:** minimize to tray, launch on Windows startup, always on top.
+- **Anti-cheat precautions / هشدار ضدتقلب:** blocks known protected processes and warns before global changes. Detection cannot guarantee compatibility.
+- **RTSS management / مدیریت RTSS:** search for an existing installation, offer consent-based `winget` installation of `Guru3D.RTSS`, manual folder selection, official download fallback, diagnostics.
+- **Tests / تست:** self-test for theme layouts, responsive layout, presets, language switching and RTSS configuration parser. CI on Windows compiles the project and runs the test. Real-world gameplay and RTSS interaction require a Windows PC.
 
-Choose **EN** or **فا** at the top of PacePilot's sidebar. The UI switches immediately and saves your preference under `%APPDATA%\PacePilot\settings.xml`. UI labels, buttons, profile messages, warnings and the tray menu support both languages. RTSS diagnostic logs remain in technical English for troubleshooting.
+## RTSS setup / نصب RTSS
 
-با انتخاب **فا** یا **EN** در ستون سمت چپ، زبان برنامه بلافاصله تغییر می‌کند و برای دفعات بعد ذخیره خواهد شد. دکمه‌ها، وضعیت‌ها، هشدارها و منوی کنار ساعت ترجمه شده‌اند. متن‌های فنی گزارش عیب‌یابی برای خوانایی پشتیبانی انگلیسی باقی می‌مانند.
+If RTSS is missing, PacePilot asks before doing anything. If the user approves, Windows Package Manager runs `winget install --id Guru3D.RTSS --exact --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity` with a Windows UAC prompt when necessary. `winget` verifies its installer package according to its manifest. If installation fails or is refused, [Guru3D's RTSS download page](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/) is offered. RTSS binaries are **not** redistributed with PacePilot.
 
-## 🎮 Capabilities / امکانات
+در نبود RTSS، برنامه ابتدا اجازه می‌گیرد؛ پس از تأیید کاربر با `winget` تلاش به نصب می‌کند. در صورت شکست، مسیر دانلود رسمی معرفی می‌شود. هیچ فایل اجرایی RTSS در بسته بازنشر نمی‌شود.
 
-- Adjustable FPS cap (0 = unlimited), preset buttons, live RTSS FPS and frametime chart. / تنظیم FPS، دکمه‌های آماده، نمایش زنده FPS و نمودار زمان فریم.
-- Game-specific profiles and global profile; automatic saved-game selection. / پروفایل مجزا برای هر بازی و پروفایل عمومی.
-- Global hotkeys, tray icon, Windows startup and topmost window. / میانبرهای سراسری، آیکن کنار ساعت و اجرای خودکار.
-- Detailed RTSS diagnostics and on-disk profile backup before fallback modification. / گزارش عیب‌یابی و نسخه پشتیبان از پروفایل RTSS در صورت نیاز.
-- Protective warnings for supported anti-cheat cases; these are **not** comprehensive anti-cheat compatibility guarantees. / هشدارهای محافظتی برای برخی بازی‌های دارای ضدتقلب؛ سازگاری همه بازی‌ها تضمین نمی‌شود.
+## Build locally / ساخت از سورس
 
-## ✅ Testing / تست
+Double-click `Start-PacePilot.cmd` on Windows 10/11 x64. The script finds Microsoft's .NET Framework C# compiler, builds a uniquely named EXE to avoid file-locking, executes `--selftest`, and launches the verified build. Files in `Docs/` are optional helpers; users need only the single launcher. The workflow produces `Bin/PacePilot.exe` for the Actions artifact.
 
-The Windows CI workflow compiles the C# WinForms app and runs a **read-only UI self-test** covering the English/Persian switch, layout, FPS preset selection and RTSS profile-file parser. It does **not** test actual RTSS installation or live gameplay; those require a real Windows machine with RTSS and a game. / تست خودکار شامل کامپایل، دوزبانه بودن، چیدمان و دکمه‌های FPS است؛ تست نصب واقعی RTSS و عملکرد درون بازی هنوز باید روی سیستم ویندوزی انجام شود.
+روی ویندوز ۱۰/۱۱ نسخه ۶۴ بیتی، فایل `Start-PacePilot.cmd` را اجرا کنید. این فایل ساخت برنامه و تست را یکجا انجام می‌دهد. نیازی به اجرای چند فایل CMD نیست.
 
-## ⚠️ Notes / توجه
+## Scope and limitations / محدودیت‌ها
 
-- Windows 10/11 x64 and .NET Framework 4.x required. / ویندوز ۱۰ یا ۱۱ نسخه ۶۴ بیتی و .NET Framework 4.x لازم است.
-- Online games with anti-cheat may block or prohibit overlays/external limiters. / در بازی‌های آنلاین دارای ضدتقلب ممکن است محدودکننده خارجی مجاز نباشد.
-- The software never installs RTSS without explicit user consent. / برنامه بدون اجازه کاربر RTSS را نصب نمی‌کند.
+PacePilot is **not a reimplementation of the proprietary FramePacer engine** and is not affiliated with FramePacer, pacerio, RTSS or Guru3D. The app relies on separately installed RTSS for actual FPS limiting and monitoring. **NVIDIA Reflex, DLSS Frame Generation / Dynamic MFG, ReShade injection, controller-driven navigation, proprietary multi-API injection and Microsoft Store protected-game interoperability are not implemented.** Do not interpret the UI mockups as evidence of these features. Smoothness depends on the game's engine, RTSS compatibility, and your hardware. An FPS cap cannot eliminate all stuttering.
 
-## 📄 License / مجوز
+PacePilot موتور اختصاصی FramePacer را کپی نمی‌کند. قابلیت‌های Reflex و DLSS Frame Generation و موارد وابسته به موتور اختصاصی **پیاده‌سازی نشده‌اند**. ادعای حذف کامل لگ یا سازگاری با همه بازی‌های آنلاین وجود ندارد. در بازی‌های دارای ضدتقلب از محدودکننده خارجی بدون بررسی قوانین بازی استفاده نکنید.
 
-PacePilot source is MIT licensed; RTSS remains third-party freeware subject to its own terms. / کد PacePilot تحت MIT است و مجوز RTSS مستقل است.
+## License
+
+PacePilot source: MIT. Third-party RTSS: separately licensed by its publisher. Theme concept mockups are visual previews, not executable interfaces.

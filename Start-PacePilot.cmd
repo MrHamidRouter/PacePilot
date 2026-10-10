@@ -6,7 +6,7 @@ set "CSC=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 set "APP=%~dp0Bin\PacePilot.exe"
 set "LOG=%TEMP%\PacePilot-selftest.log"
 echo ================================================
-echo PacePilot 1.4 - Developer: Mr.HamidRouter
+echo PacePilot 2.0 - Developer: Mr.HamidRouter
 echo One-click build / automated test / launch
 echo ================================================
 if not exist "%CSC%" (
@@ -20,7 +20,7 @@ if exist "%ProgramFiles(x86)%\RivaTuner Statistics Server\RTSS.exe" (echo [OK] R
 echo [2/4] Building fresh Windows EXE...
 rem Compile to a random filename to avoid locking an EXE from a previous run.
 set "TEMP_EXE=%~dp0Bin\PacePilot_%RANDOM%_%RANDOM%.exe"
-"%CSC%" /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /out:"%TEMP_EXE%" /win32icon:"Assets\PacePilot.ico" /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll "Source\Program.cs"
+"%CSC%" /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /out:"%TEMP_EXE%" /win32icon:"Assets\PacePilot.ico" /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll "Source\Program.cs Source\StudioForm.cs"
 if errorlevel 1 goto :fail
 if not exist "%TEMP_EXE%" goto :fail
 echo [3/4] Running built-in UI self-test...

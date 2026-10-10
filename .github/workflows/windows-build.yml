@@ -14,7 +14,7 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll Source\Program.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll Source\Program.cs Source\StudioForm.cs
       - name: English and Persian UI self-test
         shell: powershell
         run: |
@@ -26,7 +26,7 @@ jobs:
       - name: Publish standalone EXE artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PacePilot-Windows-x64-v1.4
+          name: PacePilot-Windows-x64-v2.0
           path: Bin/PacePilot.exe
           if-no-files-found: error
           retention-days: 90

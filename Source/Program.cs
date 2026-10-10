@@ -1,4 +1,4 @@
-﻿// PacePilot - A Windows framerate control front-end powered by installed RTSS.
+// PacePilot - A Windows framerate control front-end powered by installed RTSS.
 // MIT-licensed original application source. Does not bundle RTSS or bypass anti-cheat.
 using System;
 using System.Collections.Generic;
@@ -24,8 +24,8 @@ using System.Reflection;
 [assembly: AssemblyCompany("Mr.HamidRouter")]
 [assembly: AssemblyProduct("PacePilot")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Mr.HamidRouter")]
-[assembly: AssemblyVersion("1.4.0.0")]
-[assembly: AssemblyFileVersion("1.4.0.0")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
 
 namespace PacePilot
 {
@@ -43,6 +43,7 @@ namespace PacePilot
     {
         public string RtssFolder { get; set; }
         public string LanguageCode { get; set; }
+        public string ThemeName { get; set; }
         public int GlobalLimit { get; set; }
         public bool MinimizeToTray { get; set; }
         public bool StartWithWindows { get; set; }
@@ -52,7 +53,7 @@ namespace PacePilot
         public List<GameProfile> Games { get; set; }
         public AppSettings()
         {
-            RtssFolder = ""; LanguageCode = "en"; GlobalLimit = 60; MinimizeToTray = true;
+            RtssFolder = ""; ThemeName = "teal"; LanguageCode = "en"; GlobalLimit = 60; MinimizeToTray = true;
             LastTarget = "Global"; AutoSelectKnownGames = true; Games = new List<GameProfile>();
         }
     }
@@ -1462,15 +1463,15 @@ namespace PacePilot
                     string log = Path.Combine(Path.GetTempPath(), "PacePilot-selftest.log");
                     try
                     {
-                        using (MainForm test = new MainForm(false, true))
+                        using (StudioForm test = new StudioForm(false, true))
                         {
                             test.Opacity = 0;
                             test.Show();
                             Application.DoEvents();
-                            test.RunUiSelfCheck();
+                            test.SelfTest();
                             test.Close();
                         }
-                        File.WriteAllText(log, "PASS: English/Persian localization switch, layout 1000x690, 1280x800, 1920x1080, FPS buttons, RTSS profile patch regression.\r\nBackend RTSS/winget installation requires an interactive Windows test.\r\n");
+                        File.WriteAllText(log, "PASS: Six themes, English/Persian, resizing, FPS selection, RTSS profile patch regression.\r\nBackend RTSS/winget installation requires an interactive Windows test.\r\n");
                         Environment.ExitCode = 0;
                     }
                     catch (Exception ex)
@@ -1479,7 +1480,7 @@ namespace PacePilot
                         Environment.ExitCode = 1;
                     }
                 }
-                else Application.Run(new MainForm(tray));
+                else Application.Run(new StudioForm(tray, false));
                 GC.KeepAlive(mutex);
             }
         }

@@ -1,27 +1,29 @@
-# 🇬🇧 PacePilot v1.4 — English guide
+# PacePilot Studio v2.0
 
 **Developer: Mr.HamidRouter**
 
-## One EXE for Windows
+An original, open-source Windows frontend for RTSS FPS limiting with **six distinct, functional themes** and English/Persian localization.
 
-Open the latest successful **Windows EXE build and self-test** on [GitHub Actions](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml), download artifact **PacePilot-Windows-x64-v1.4**, extract it and run **PacePilot.exe**. End users do not need Visual Studio or CMD files. If building locally from source, run `Start-PacePilot.cmd` once; it generates `Bin\PacePilot.exe` and executes the UI test.
+### Download
 
-## Automatic RTSS download / installation
+Open [GitHub Actions](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml), select a **successful** Windows build and download `PacePilot-Windows-x64-v2.0`. Extract and run `PacePilot.exe`. If no build artifact is available, download the source and use the single `Start-PacePilot.cmd` launcher (build + self-test + run).
 
-On launch, PacePilot checks for an existing RivaTuner Statistics Server (RTSS) installation. When missing, it **asks permission** to install package **`Guru3D.RTSS`** via Microsoft's `winget`. Accept Windows administrator approval if prompted. The app rechecks the install and starts RTSS afterward. Existing RTSS installations are reused and not reinstalled.
+### Features
 
-If `winget` is unavailable, the user declines, or installation/network verification fails, PacePilot offers the [official Guru3D RTSS download](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/) and allows manual selection of an installed RTSS folder. No RTSS installers are bundled or redistributed; package hash checks are never disabled. Installation needs connectivity, working winget and possibly administrator approval.
+- Six themes: Neon Teal, Windows Blue, Cyber Purple, Racing Red, Esports Lime and Graphite Gold.
+- English and Persian interface; remembered selection.
+- Global and per-game FPS caps, 0–1000 FPS; automatic saved-game selection.
+- Actual RTSS FPS/frametime samples and a live graph; no synthetic telemetry.
+- Hotkeys, system tray, Windows startup, always-on-top preference.
+- Consent-driven RTSS installation using `winget` and official download fallback.
+- Real configuration diagnostics, safety warnings for protected games and automated UI tests.
 
-## English and Persian UI
+### Install RTSS
 
-Switch between `EN` and `فا` in the sidebar. The language changes immediately and persists. Buttons, statuses, safety warnings and tray menu are translated. Low-level RTSS diagnostic logs stay in English.
+RTSS is not bundled. If absent, PacePilot asks permission before using `winget` to install `Guru3D.RTSS`. If that fails, it offers Guru3D's official download page. The package installer may require Windows administrator approval.
 
-## Features
+### Known limits
 
-Real RTSS FPS cap (0 = unlimited), preset FPS buttons, live FPS/frametime display, chart, global/per-game profiles, foreground-game auto-selection, system-wide hotkeys, tray mode, Windows startup and RTSS diagnostic logging with backup for profile fallbacks.
+PacePilot is a standalone RTSS frontend, **not a reproduction of FramePacer's proprietary pacing engine**. NVIDIA Reflex, DLSS Frame Generation/Dynamic MFG, proprietary injection and dedicated controller support are **not implemented**. RTSS-compatible games are necessary for FPS caps and monitoring. Aggressive anti-cheat solutions may prohibit external tools. Windows CI is not a substitute for real hardware/gameplay testing.
 
-**System:** Windows 10/11 x64 + .NET Framework 4.x. Do not assume third-party limiters are compatible with protected online games.
-
-**Testing:** The GitHub Actions self-test checks bilingual UI, layout, FPS selection and profile-file handling. It does **not** validate an RTSS installation or actual gameplay.
-
-**License:** MIT (PacePilot source). RTSS is third-party software with separate terms.
+**Windows 10/11 x64 · .NET Framework 4.x · MIT · Developer Mr.HamidRouter**
