@@ -6,7 +6,7 @@ set "CSC=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 set "APP=%~dp0Bin\PacePilot.exe"
 set "LOG=%TEMP%\PacePilot-selftest.log"
 echo ================================================
-echo PacePilot 1.3 - Developer: Mr.HamidRouter
+echo PacePilot 1.4 - Developer: Mr.HamidRouter
 echo One-click build / automated test / launch
 echo ================================================
 if not exist "%CSC%" (
@@ -15,8 +15,8 @@ if not exist "%CSC%" (
  goto :fail
 )
 if not exist "Bin" mkdir "Bin"
-echo [1/4] Checking RTSS installation (non-blocking)...
-if exist "%ProgramFiles(x86)%\RivaTuner Statistics Server\RTSS.exe" (echo [OK] RTSS detected.) else if exist "%ProgramFiles%\RivaTuner Statistics Server\RTSS.exe" (echo [OK] RTSS detected.) else echo [INFO] RTSS not found in default location. Install it to use FPS limiting.
+echo [1/4] Checking RTSS installation (non-blocking, GUI offers auto-install if missing)...
+if exist "%ProgramFiles(x86)%\RivaTuner Statistics Server\RTSS.exe" (echo [OK] RTSS detected.) else if exist "%ProgramFiles%\RivaTuner Statistics Server\RTSS.exe" (echo [OK] RTSS detected.) else echo [INFO] RTSS not found in default location. PacePilot will offer official RTSS winget installation when launched.
 echo [2/4] Building fresh Windows EXE...
 rem Compile to a random filename to avoid locking an EXE from a previous run.
 set "TEMP_EXE=%~dp0Bin\PacePilot_%RANDOM%_%RANDOM%.exe"
