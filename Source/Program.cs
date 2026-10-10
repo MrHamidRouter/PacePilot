@@ -24,8 +24,8 @@ using System.Reflection;
 [assembly: AssemblyCompany("Mr.HamidRouter")]
 [assembly: AssemblyProduct("PacePilot")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Mr.HamidRouter")]
-[assembly: AssemblyVersion("2.0.0.0")]
-[assembly: AssemblyFileVersion("2.0.0.0")]
+[assembly: AssemblyVersion("2.1.0.0")]
+[assembly: AssemblyFileVersion("2.1.0.0")]
 
 namespace PacePilot
 {
@@ -34,8 +34,10 @@ namespace PacePilot
     {
         public string Exe { get; set; }
         public string FullPath { get; set; }
+        public string DisplayName { get; set; }
+        public string Platform { get; set; }
         public int Limit { get; set; }
-        public GameProfile() { Exe = ""; FullPath = ""; Limit = 60; }
+        public GameProfile() { Exe = ""; FullPath = ""; DisplayName = ""; Platform = ""; Limit = 60; }
     }
 
     [Serializable]
@@ -50,6 +52,7 @@ namespace PacePilot
         public bool AlwaysOnTop { get; set; }
         public bool AutoSelectKnownGames { get; set; }
         public string LastTarget { get; set; }
+        public DateTime LastUpdateCheckUtc { get; set; }
         public List<GameProfile> Games { get; set; }
         public AppSettings()
         {
@@ -193,6 +196,51 @@ namespace PacePilot
             }
             finally { try { if (File.Exists(tmp)) File.Delete(tmp); } catch { } }
             return backup;
+        }
+    }
+
+    public sealed class RtssElevationRequiredException : Exception
+    {
+        public readonly string Exe;
+        public readonly int Fps;
+        public RtssElevationRequiredException(string exe,int fps,Exception inner)
+            : base("RTSS profile folder requires administrator permission.",inner)
+        { Exe=exe; Fps=fps; }
+    }
+
+    internal static class ElevatedRtssProfileWriter
+    {
+        // Limited helper: user approves Windows UAC; no GUI mutex and no RTSS hook injection.
+        public static int Execute(string[] args)
+        {
+            try
+            {
+                if(args.Length!=3)return 20;
+                int fps;
+                if(!Int32.TryParse(args[1],out fps)||fps<0||fps>1000)return 21;
+                string exe=Encoding.UTF8.GetString(Convert.FromBase64String(args[2]));
+                if(exe!="Global" &&
+                    (String.IsNullOrWhiteSpace(exe)||Path.GetFileName(exe)!=exe||
+                     !exe.EndsWith(".exe",StringComparison.OrdinalIgnoreCase)))return 22;
+                RtssControl rtss=new RtssControl();
+                AppSettings settings=Store.Load();
+                if(!rtss.Initialize(RtssControl.FindFolder(settings.RtssFolder)))return 23;
+                string path=rtss.ProfileFile(exe);
+                RtssProfileFile.WriteWithBackup(path,fps);
+                return RtssProfileFile.ReadLimit(path)==fps &&
+                       RtssProfileFile.ReadDenominator(path)==1 ? 0 : 24;
+            }
+            catch(Exception ex)
+            {
+                try
+                {
+                    string folder=Path.Combine(Store.Folder,"Logs");
+                    Directory.CreateDirectory(folder);
+                    File.AppendAllText(Path.Combine(folder,"RTSS-Elevated-Repair.log"),
+                        DateTime.UtcNow.ToString("u")+" "+ex+Environment.NewLine);
+                } catch { }
+                return 25;
+            }
         }
     }
 
@@ -383,7 +431,13 @@ namespace PacePilot
                 if (onDisk != fps || denomDisk != 1)
                 {
                     trace.AppendLine("Native SaveProfile did not persist the value. Trying backup + atomic disk repair.");
-                    string backup = RtssProfileFile.WriteWithBackup(path, fps);
+                    string backup;
+                    try { backup = RtssProfileFile.WriteWithBackup(path, fps); }
+                    catch(UnauthorizedAccessException denied)
+                    {
+                        trace.AppendLine("Protected RTSS profile folder: UAC approval required.");
+                        throw new RtssElevationRequiredException(exe,fps,denied);
+                    }
                     trace.AppendLine("Backup at " + backup);
                     trace.AppendLine("After repair, disk=" + FormatLimit(RtssProfileFile.ReadLimit(path))
                         + ", denominator=" + FormatLimit(RtssProfileFile.ReadDenominator(path)));
@@ -397,6 +451,11 @@ namespace PacePilot
                         + ", denominator=" + FormatLimit(RtssProfileFile.ReadDenominator(path))
                         + ". Check the RTSS profile or restart RTSS after closing games. See diagnostics.");
                 trace.AppendLine("Success: runtime read-back verified after profile repair.");
+            }
+            catch (RtssElevationRequiredException ex)
+            {
+                trace.AppendLine("UAC REQUIRED: " + ex.Message);
+                throw;
             }
             catch (Exception ex)
             {
@@ -417,6 +476,16 @@ namespace PacePilot
                 }
                 catch { /* Logging failure must not mask the real RTSS result. */ }
             }
+        }
+        public void VerifyElevatedProfile(string exe,int fps)
+        {
+            string file=ProfileFile(exe);
+            if(RtssProfileFile.ReadLimit(file)!=fps || RtssProfileFile.ReadDenominator(file)!=1)
+                throw new InvalidOperationException("Administrator repair did not persist FPS.");
+            RtssNative.UpdateProfiles();
+            int runtime=GetLimit(exe);
+            if(runtime!=fps)
+                throw new InvalidOperationException("Disk profile saved but RTSS did not reload ("+runtime+"). Restart RTSS and retry.");
         }
         private static string FormatLimit(int? n) { return n.HasValue ? n.Value.ToString() : "unavailable"; }
 
@@ -1436,6 +1505,12 @@ namespace PacePilot
         [STAThread]
         static void Main(string[] args)
         {
+            // Limited profile repair runs elevated without acquiring the GUI singleton mutex.
+            if(args.Length>0 && String.Equals(args[0],"--rtss-repair",StringComparison.OrdinalIgnoreCase))
+            {
+                Environment.ExitCode=ElevatedRtssProfileWriter.Execute(args);
+                return;
+            }
             // Read-only diagnostics are allowed even if an older GUI has the mutex.
             if (args.Any(x => String.Equals(x, "--diagnose-rtss", StringComparison.OrdinalIgnoreCase)))
             {

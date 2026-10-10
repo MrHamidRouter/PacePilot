@@ -1,12 +1,12 @@
-# PacePilot Studio 2.0 | نرم‌افزار کنترل فریم ویندوز
+# PacePilot Studio 2.1 | نرم‌افزار کنترل فریم ویندوز
 
 **[Website / سایت پروژه](https://mrhamidrouter.github.io/PacePilot/)** · **[Windows ZIP / دریافت ویندوز](https://github.com/MrHamidRouter/PacePilot/releases/latest/download/PacePilot-Windows-x64.zip)** · **[All releases / نسخه‌ها](https://github.com/MrHamidRouter/PacePilot/releases)**
 
 **Developer / توسعه‌دهنده: Mr.HamidRouter** · **Windows 10/11 x64** · **English / فارسی** · **MIT License**
 
-PacePilot is an independent Windows FPS-limiter front end powered by **RivaTuner Statistics Server (RTSS)**. It offers **six fully functional dashboard designs**, per-game/global FPS caps, RTSS live telemetry, a measured frametime graph, persistent game profiles, global hotkeys, tray controls, and assisted RTSS installation.
+PacePilot is an independent Windows FPS-limiter front end powered by **RivaTuner Statistics Server (RTSS)**. It offers **six selectable artwork themes**, per-game/global FPS caps, RTSS live telemetry, a measured frametime graph, persistent game profiles, global hotkeys, tray controls, and assisted RTSS installation.
 
-PacePilot یک نرم‌افزار مستقل ویندوز برای کنترل FPS با استفاده از RTSS است. **شش طرح گرافیکی واقعی و قابل‌تغییر**، تنظیم محدودیت فریم برای هر بازی، نمودار زنده مبتنی بر اندازه‌گیری RTSS، پروفایل‌های ذخیره‌شده، میانبرهای سراسری، اجرای کنار ساعت و نصب هدایت‌شده RTSS دارد.
+PacePilot یک نرم‌افزار مستقل ویندوز برای کنترل FPS با استفاده از RTSS است. **شش پوسته گرافیکی با پس‌زمینه اختصاصی**، تنظیم محدودیت فریم برای هر بازی، نمودار زنده مبتنی بر اندازه‌گیری RTSS، پروفایل‌های ذخیره‌شده، میانبرهای سراسری، اجرای کنار ساعت و نصب هدایت‌شده RTSS دارد.
 
 ## Download / دریافت نسخه اجرایی
 
@@ -76,3 +76,13 @@ PacePilot موتور اختصاصی FramePacer را کپی نمی‌کند. قا
 ## License
 
 PacePilot source: MIT. Third-party RTSS: separately licensed by its publisher. Theme concept mockups are visual previews, not executable interfaces.
+
+## PacePilot Studio 2.1 / نسخه ۲.۱
+
+- Embedded artwork from the six approved theme concepts / پس‌زمینه تصویری شش پوسته در فایل EXE.
+- Local Steam, Epic Games and GOG game detection / شناسایی بازی‌های نصب‌شده.
+- Official GitHub Releases update notifications / بررسی نسخه جدید گیت‌هاب.
+- RTSS protected-profile UAC-assisted save, with explicit consent / رفع خطای دسترسی پروفایل RTSS با مجوز محدود.
+- Download one ready-to-use ZIP from [Releases](https://github.com/MrHamidRouter/PacePilot/releases).
+
+**Developer: Mr.HamidRouter**

@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.ComponentModel;
 using System.Text;
+using System.Reflection;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -38,7 +39,57 @@ namespace PacePilot
         public static StudioTheme Find(string id) { return All.FirstOrDefault(x=>x.Id==id) ?? All[0]; }
     }
 
-    public sealed class StudioCard : Panel
+    // Artwork from the six approved mockups is embedded into the EXE.
+    internal static class ThemeVisuals
+    {
+        static readonly Dictionary<string,Image> Cache=new Dictionary<string,Image>();
+        public static Image Get(string id)
+        {
+            lock(Cache)
+            {
+                if(Cache.ContainsKey(id))return Cache[id];
+                try
+                {
+                    using(Stream src=typeof(StudioForm).Assembly.GetManifestResourceStream("PacePilot.UI."+id))
+                    {
+                        if(src==null)return null;
+                        using(Image image=Image.FromStream(src)) Cache[id]=new Bitmap(image);
+                    }
+                    return Cache[id];
+                } catch {return null;}
+            }
+        }
+        public static Rectangle Crop(string id,bool side,Image image)
+        {
+            if(image==null)return Rectangle.Empty;
+            double x=.60,y=.05,w=.39,h=.20;
+            if(id=="teal"){x=side?0:.04;y=side?.42:.42;w=side?.19:.22;h=side?.35:.25;}
+            if(id=="light"){x=side?.80:.65;y=side?.50:.66;w=side?.19:.33;h=side?.43:.33;}
+            if(id=="purple"){x=side?0:.67;y=side?.52:.10;w=side?.19:.32;h=side?.45:.20;}
+            if(id=="racing"){x=side?0:.50;y=side?.46:.01;w=side?.18:.48;h=side?.43:.20;}
+            if(id=="lime"){x=side?0:.01;y=side?.52:.51;w=side?.19:.19;h=side?.45:.36;}
+            if(id=="gold"){x=side?0:.43;y=side?.58:0;w=side?.19:.55;h=side?.33:.12;}
+            return new Rectangle((int)(x*image.Width),(int)(y*image.Height),
+                Math.Max(1,(int)(w*image.Width)),Math.Max(1,(int)(h*image.Height)));
+        }
+        public static Bitmap Sidebar(StudioTheme theme)
+        {
+            Image image=Get(theme.Id);if(image==null)return null;
+            Bitmap bitmap=new Bitmap(360,900);
+            using(Graphics graphics=Graphics.FromImage(bitmap))
+            {
+                graphics.Clear(theme.Sidebar);
+                graphics.InterpolationMode=InterpolationMode.HighQualityBicubic;
+                graphics.DrawImage(image,new Rectangle(0,250,360,645),Crop(theme.Id,true,image),GraphicsUnit.Pixel);
+                using(LinearGradientBrush overlay=new LinearGradientBrush(new Rectangle(0,0,360,900),
+                    Color.FromArgb(theme.Light?245:244,theme.Sidebar),
+                    Color.FromArgb(theme.Light?195:112,theme.Sidebar),90))
+                    graphics.FillRectangle(overlay,0,0,360,900);
+            }
+            return bitmap;
+        }
+    }
+    public class StudioCard : Panel
     {
         public StudioTheme Theme;
         public StudioCard(StudioTheme t) { Theme=t; DoubleBuffered=true; BackColor=t.Panel; Margin=Padding.Empty; }
@@ -47,6 +98,22 @@ namespace PacePilot
             base.OnPaint(e);
             e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
             using(Pen p=new Pen(Theme.Border)) e.Graphics.DrawRectangle(p,0,0,Width-1,Height-1);
+        }
+    }
+    public sealed class ThemeCard : StudioCard
+    {
+        public Image Artwork;
+        public Rectangle CropRectangle;
+        public ThemeCard(StudioTheme theme):base(theme){}
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            base.OnPaintBackground(e);
+            if(Artwork==null)return;
+            e.Graphics.InterpolationMode=InterpolationMode.HighQualityBicubic;
+            e.Graphics.DrawImage(Artwork,new Rectangle(0,0,Width,Height),CropRectangle,GraphicsUnit.Pixel);
+            using(LinearGradientBrush shade=new LinearGradientBrush(new Rectangle(0,0,Math.Max(1,Width),Math.Max(1,Height)),
+                Color.FromArgb(245,Theme.Panel),Color.FromArgb(70,Theme.Panel),0f))
+                e.Graphics.FillRectangle(shade,0,0,Width,Height);
         }
     }
     public sealed class StudioGraph : Control
@@ -108,6 +175,7 @@ namespace PacePilot
         string currentTarget="Global", currentPage="dashboard";
         bool rebuilding=false, finishing=false, prompted=false, installing=false;
         bool refreshPending=false;
+        bool gameScanPending=false,updateCheckPending=false;
         int applied=0;
         int lastNonZero=60;
         TableLayoutPanel shell;
@@ -134,7 +202,7 @@ namespace PacePilot
             ClientSize=new Size(1340,865); MinimumSize=new Size(950,665);
             Font=new Font("Segoe UI",9f); StartPosition=FormStartPosition.CenterScreen;
             AutoScaleMode=AutoScaleMode.Dpi;
-            Text="PacePilot Studio v2.0  |  Mr.HamidRouter";
+            Text="PacePilot Studio v2.1  |  Mr.HamidRouter";
             try { Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { Icon=SystemIcons.Application; }
             currentTarget=String.IsNullOrEmpty(settings.LastTarget)?"Global":settings.LastTarget;
             Build();
@@ -143,7 +211,7 @@ namespace PacePilot
                 InitializeRtss(); InitTray();
                 timer=new System.Windows.Forms.Timer(); timer.Interval=500; timer.Tick+=(s,e)=>UpdateLive(); timer.Start();
                 SetStartup(false);
-                Shown+=(s,e)=>BeginInvoke(new System.Action(AskInstall));
+                Shown+=(s,e)=>BeginInvoke(new System.Action(()=>{AskInstall();ScanInstalledGames(false);CheckUpdates(false);}));
             }
             TopMost=settings.AlwaysOnTop;
             if(startInTray && !testing) { WindowState=FormWindowState.Minimized; ShowInTaskbar=false; }
@@ -192,9 +260,10 @@ namespace PacePilot
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,sideWidth));
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); Controls.Add(shell);
             side=new Panel(); side.Dock=DockStyle.Fill; side.BackColor=theme.Sidebar;side.AutoScroll=true;
+            side.BackgroundImage=ThemeVisuals.Sidebar(theme);side.BackgroundImageLayout=ImageLayout.Stretch;
             side.Margin=Padding.Empty; shell.Controls.Add(side,0,0);
             TextAt(side,"◈ PacePilot","◈ PacePilot",20,20,198,40,19,true,theme.Accent);
-            TextAt(side,"FRAME CONTROL STUDIO","استودیو کنترل فریم",21,59,198,23,8,true,theme.Secondary);
+            TextAt(side,"PRECISION GAMING","ابزار حرفه‌ای گیمینگ",21,59,198,23,8,true,theme.Secondary);
             TextAt(side,"LANGUAGE / زبان","زبان / LANGUAGE",20,99,183,18,8,false,theme.Secondary);
             langBox=SelectBox(side,21,121,193,30,new string[]{"English","فارسی"},Fa?1:0);
             langBox.SelectedIndexChanged+=(s,e)=>{if(rebuilding)return; settings.LanguageCode=langBox.SelectedIndex==1?"fa":"en";Persist();Build();};
@@ -202,8 +271,8 @@ namespace PacePilot
             themeBox=SelectBox(side,21,187,193,32,StudioTheme.All.Select(x=>x.Display).ToArray(),Array.FindIndex(StudioTheme.All,x=>x.Id==theme.Id));
             themeBox.SelectedIndexChanged+=(s,e)=>{if(rebuilding||themeBox.SelectedIndex<0)return;settings.ThemeName=StudioTheme.All[themeBox.SelectedIndex].Id; theme=StudioTheme.Find(settings.ThemeName);Persist();Build();};
             string[] nav={"dashboard","profiles","settings","rtss","logs","about"};
-            string[] en={"Dashboard","Game Profiles","Preferences","RTSS & Tools","Diagnostics","About"};
-            string[] fa={"داشبورد","پروفایل بازی‌ها","تنظیمات","RTSS و ابزارها","گزارش و خطایابی","درباره برنامه"};
+            string[] en={"Dashboard","Game Library","Appearance & Settings","RTSS & Tools","Diagnostics","About"};
+            string[] fa={"داشبورد","کتابخانه بازی‌ها","ظاهر و تنظیمات","RTSS و ابزارها","گزارش و خطایابی","درباره برنامه"};
             string[] symbols={"⌂","▣","⚙","◉","≡","ⓘ"};
             for(int i=0;i<nav.Length;i++)
             {
@@ -213,7 +282,7 @@ namespace PacePilot
             }
             TextAt(side,"Developer:","توسعه‌دهنده:",22,573,194,23,9,false,theme.Secondary);
             TextAt(side,"Mr.HamidRouter","Mr.HamidRouter",22,596,194,28,11,true,theme.Accent);
-            TextAt(side,"Six live UI layouts","شش رابط کاربری واقعی",22,633,190,25,8,false,theme.Secondary);
+            TextAt(side,"Gaming Performance Utility","ابزار تخصصی عملکرد بازی",22,633,190,25,8,false,theme.Secondary);
             viewport=new Panel(); viewport.Dock=DockStyle.Fill; viewport.AutoScroll=true;viewport.BackColor=theme.Bg;viewport.Margin=Padding.Empty;
             shell.Controls.Add(viewport,1,0);
             canvas=new Panel(); canvas.Location=Point.Empty;canvas.BackColor=theme.Bg; viewport.Controls.Add(canvas);
@@ -264,6 +333,7 @@ namespace PacePilot
                 "محدودسازی FPS • پروفایل بازی • نمایش اطلاعات واقعی RTSS");
             int gap=12, top=98, height=0;
             int wide=w, left=(int)(w*0.59), right=w-left-gap;
+            if(theme.Layout!=3){MakeHero(x,top,wide,85);top+=97;}
             if(theme.Layout==1)
             {
                 MakeTarget(x,top,wide,148); MakeLimiter(x,top+160,wide,176);
@@ -312,8 +382,12 @@ namespace PacePilot
         }
         void MakeHero(int x,int y,int w,int h)
         {
-            StudioCard c=Card("SMOOTHER FRAMES. FASTER GAMES.","فریم روان‌تر، اجرای بهتر",x,y,w,h);
-            TextAt(c,"VELOCITY PERFORMANCE MODE","حالت عملکرد مسابقه‌ای",18,44,w-40,28,12,true,theme.Accent);
+            ThemeCard c=new ThemeCard(theme);
+            c.SetBounds(x,y,w,h);c.Artwork=ThemeVisuals.Get(theme.Id);
+            c.CropRectangle=ThemeVisuals.Crop(theme.Id,false,c.Artwork);
+            canvas.Controls.Add(c);
+            TextAt(c,"PACEPILOT   /   PRECISION GAMING","PacePilot  |  تجربه روان‌تر بازی",18,9,w-36,32,15,true,theme.Accent);
+            TextAt(c,"PERFORMANCE  •  PRECISION  •  CONTROL","عملکرد بهینه • کنترل دقیق • تجربه حرفه‌ای",19,41,w-39,25,10,true,theme.Ink);
         }
         void MakeTarget(int x,int y,int w,int h)
         {
@@ -460,6 +534,49 @@ namespace PacePilot
                 }
                 Persist();SetStatus(L("Verified: ","تأیید شد: ")+currentTarget+"  •  "+n+" FPS",true);
             }
+            catch(RtssElevationRequiredException need)
+            {
+                if(MessageBox.Show(this,
+                    L("Windows protects the RTSS profiles folder. Approve administrator access to save only this FPS profile?",
+                      "پوشه پروفایل‌های RTSS محافظت‌شده است. برای ذخیره همین محدودیت فریم، مجوز Administrator را تأیید می‌کنید؟"),
+                    L("RTSS profile permissions","مجوز ذخیره پروفایل RTSS"),
+                    MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)
+                {
+                    SetStatus(L("Profile write was canceled.","ذخیره پروفایل لغو شد."),false);
+                    return;
+                }
+                try
+                {
+                    ProcessStartInfo info=new ProcessStartInfo(Application.ExecutablePath);
+                    info.Arguments="--rtss-repair "+need.Fps+" "+Convert.ToBase64String(Encoding.UTF8.GetBytes(need.Exe));
+                    info.UseShellExecute=true;
+                    info.Verb="runas";
+                    info.WindowStyle=ProcessWindowStyle.Hidden;
+                    using(Process helper=Process.Start(info))
+                    {
+                        if(helper==null)throw new InvalidOperationException("Elevated helper did not start.");
+                        if(!helper.WaitForExit(120000))
+                            throw new TimeoutException("Timed out waiting for RTSS profile repair.");
+                        if(helper.ExitCode!=0)
+                            throw new InvalidOperationException("RTSS elevated writer returned code "+helper.ExitCode+". See diagnostics.");
+                    }
+                    rtss.VerifyElevatedProfile(need.Exe,need.Fps);
+                    int n=need.Fps;
+                    applied=n;if(n>0)lastNonZero=n;
+                    if(currentTarget=="Global")settings.GlobalLimit=n;
+                    else
+                    {
+                        GameProfile g=settings.Games.FirstOrDefault(x=>String.Equals(x.Exe,currentTarget,StringComparison.OrdinalIgnoreCase));
+                        if(g!=null)g.Limit=n;
+                    }
+                    Persist();SetStatus(L("Verified and saved: ","ذخیره و تأیید شد: ")+n+" FPS",true);
+                }
+                catch(Exception ex)
+                {
+                    SetStatus(L("Could not repair RTSS profile: ","ترمیم پروفایل RTSS ناموفق بود: ")+ex.Message,false);
+                    if(!quiet)MessageBox.Show(this,ex.Message,L("RTSS profile error","خطای پروفایل RTSS"),MessageBoxButtons.OK,MessageBoxIcon.Error);
+                }
+            }
             catch(Exception ex)
             {
                 SetStatus(L("Could not apply: ","اعمال ناموفق: ")+ex.Message,false);
@@ -543,6 +660,85 @@ namespace PacePilot
                 if(dialog.ShowDialog(this)==DialogResult.OK && list.SelectedItem is Tuple<string,string>)AddProfile(((Tuple<string,string>)list.SelectedItem).Item2);
             }
         }
+
+        void ScanInstalledGames() { ScanInstalledGames(true); }
+        void ScanInstalledGames(bool announce)
+        {
+            if(testing||gameScanPending)return;
+            gameScanPending=true;
+            BackgroundWorker scan=new BackgroundWorker();
+            scan.DoWork+=(sender,e)=>e.Result=GameDiscovery.Scan();
+            scan.RunWorkerCompleted+=(sender,e)=>
+            {
+                gameScanPending=false;
+                if(IsDisposed)return;
+                if(e.Error!=null)
+                {
+                    if(announce)MessageBox.Show(this,e.Error.Message,L("Game scan","اسکن بازی‌ها"));
+                    return;
+                }
+                List<DetectedGame> games=e.Result as List<DetectedGame>;
+                if(games==null)return;
+                int added=0;
+                foreach(DetectedGame game in games)
+                {
+                    string exe=Path.GetFileName(game.Exe);
+                    GameProfile item=settings.Games.FirstOrDefault(p=>String.Equals(p.Exe,exe,StringComparison.OrdinalIgnoreCase));
+                    if(item==null)
+                    {
+                        settings.Games.Add(new GameProfile{
+                            Exe=exe,FullPath=game.Exe,DisplayName=game.Title,Platform=game.Platform,Limit=60});
+                        added++;
+                    }
+                    else if(String.Equals(item.FullPath,game.Exe,StringComparison.OrdinalIgnoreCase))
+                    { item.DisplayName=game.Title;item.Platform=game.Platform; }
+                }
+                if(added>0)Persist();
+                if(added>0 && (currentPage=="profiles"||currentPage=="dashboard"))DrawPage();
+                if(announce)MessageBox.Show(this,
+                    L("Games detected: ","بازی‌های شناسایی‌شده: ")+games.Count+"\n"+
+                    L("New profiles: ","پروفایل‌های جدید: ")+added+"\n"+
+                    L("Steam, Epic Games and GOG were checked. Some games need manual selection.",
+                      "کتابخانه‌های Steam، Epic و GOG بررسی شدند؛ برخی بازی‌ها به انتخاب دستی نیاز دارند."),
+                    L("Game library","کتابخانه بازی‌ها"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+            };
+            scan.RunWorkerAsync();
+        }
+        void CheckUpdates(bool manual)
+        {
+            if(testing||updateCheckPending)return;
+            if(!manual&&settings.LastUpdateCheckUtc>DateTime.UtcNow.AddHours(-24))return;
+            updateCheckPending=true;
+            BackgroundWorker worker=new BackgroundWorker();
+            worker.DoWork+=(sender,e)=>e.Result=GitHubUpdates.Check();
+            worker.RunWorkerCompleted+=(sender,e)=>
+            {
+                updateCheckPending=false;
+                if(IsDisposed)return;
+                if(e.Error!=null)
+                {
+                    if(manual)MessageBox.Show(this,
+                        L("Cannot contact GitHub: ","اتصال به گیت‌هاب برقرار نشد: ")+e.Error.Message,
+                        L("Update check","بررسی بروزرسانی"),MessageBoxButtons.OK,MessageBoxIcon.Warning);
+                    return;
+                }
+                settings.LastUpdateCheckUtc=DateTime.UtcNow;Persist();
+                GitHubRelease release=e.Result as GitHubRelease;
+                if(GitHubUpdates.IsNewer(release))
+                {
+                    if(MessageBox.Show(this,
+                        L("A new PacePilot version is available: ","نسخه جدید PacePilot منتشر شده است: ")+release.Tag+"\n"+
+                        L("Open the official GitHub release?","صفحه رسمی دریافت در گیت‌هاب باز شود؟"),
+                        L("PacePilot update","بروزرسانی PacePilot"),
+                        MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes)
+                        OpenUrl(release.Url);
+                }
+                else if(manual)
+                    MessageBox.Show(this,L("PacePilot 2.1.0 is up to date.","PacePilot نسخه ۲.۱.۰ به‌روز است."),
+                        L("Update check","بررسی بروزرسانی"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+            };
+            worker.RunWorkerAsync();
+        }
         void RemoveProfile()
         {
             if(currentTarget=="Global")return;
@@ -552,15 +748,16 @@ namespace PacePilot
         }
         void DrawProfiles(int x,int w)
         {
-            Header(x,w,"Game Profiles","پروفایل بازی‌ها","Choose a profile, then edit its limit on Dashboard.","پروفایل را انتخاب کنید و محدودیت آن را در داشبورد تغییر دهید.");
+            Header(x,w,"Your Game Library","کتابخانه بازی‌های شما","Discover installed games and customize their FPS profiles.","بازی‌های نصب‌شده را پیدا کرده و پروفایل اختصاصی تنظیم کنید.");
             StudioCard c=Card("SAVED GAMES","بازی‌های ذخیره‌شده",x,101,w,Math.Max(230,110+settings.Games.Count*58));
-            Action(c,"+ Add a game","+ افزودن بازی",17,51,180,37,true,(s,e)=>AddGame());
+            Action(c,"+ Add a game","+ افزودن بازی",17,51,170,37,true,(s,e)=>AddGame());
+            Action(c,"Scan installed games","شناسایی بازی‌ها",201,51,Math.Min(240,w-220),37,false,(s,e)=>ScanInstalledGames());
             int i=0;
             foreach(GameProfile game in settings.Games.ToList())
             {
                 GameProfile item=game;
                 int rowY=100+i*58;
-                TextAt(c,game.Exe+"  •  "+game.Limit+" FPS",game.Exe+"  •  "+game.Limit+" فریم",19,rowY,Math.Max(200,w-182),44,10,true);
+                TextAt(c,(String.IsNullOrWhiteSpace(game.DisplayName)?game.Exe:game.DisplayName)+"  •  "+game.Limit+" FPS",(String.IsNullOrWhiteSpace(game.DisplayName)?game.Exe:game.DisplayName)+"  •  "+game.Limit+" فریم",19,rowY,Math.Max(200,w-182),44,10,true);
                 Action(c,"Edit","ویرایش",Math.Max(215,w-125),rowY+3,92,34,false,(s,e)=>{currentTarget=item.Exe;currentPage="dashboard";Build();});
                 i++;
             }
@@ -568,20 +765,32 @@ namespace PacePilot
         }
         void DrawSettings(int x,int w)
         {
-            Header(x,w,"Preferences & appearance","تنظیمات و ظاهر برنامه","All six design systems are functional and can be switched without restarting.","هر شش طرح واقعی و قابل انتخاب هستند، بدون نیاز به راه‌اندازی مجدد.");
-            StudioCard c=Card("CHOOSE A VISUAL THEME","انتخاب طرح گرافیکی",x,101,w,265);
-            int itemW=(w-54)/3;
+            Header(x,w,"Personalize PacePilot","شخصی‌سازی PacePilot","Choose a visual experience that fits your setup.","نمای گرافیکی مورد علاقه‌تان را انتخاب کنید.");
+            StudioCard c=Card("THEME GALLERY","گالری پوسته‌ها",x,101,w,433);
+            int itemW=(w-63)/3;
             for(int i=0;i<6;i++)
             {
-                StudioTheme th=StudioTheme.All[i]; int px=16+(i%3)*(itemW+8),py=49+(i/3)*94;
-                Button b=Action(c,th.Display,th.Display,px,py,itemW,76,theme.Id==th.Id,(s,e)=>{settings.ThemeName=th.Id;theme=th;Persist();Build();});
+                StudioTheme th=StudioTheme.All[i];int px=16+(i%3)*(itemW+9),py=44+(i/3)*186;
+                Panel tile=new Panel();tile.SetBounds(px,py,itemW,174);
+                tile.BackColor=theme.Id==th.Id?theme.Accent:theme.Border;
+                tile.Cursor=Cursors.Hand;c.Controls.Add(tile);
+                PictureBox picture=new PictureBox();picture.SetBounds(3,3,itemW-6,135);
+                picture.Image=ThemeVisuals.Get(th.Id);picture.SizeMode=PictureBoxSizeMode.Zoom;
+                picture.BackColor=th.Panel;picture.Cursor=Cursors.Hand;tile.Controls.Add(picture);
+                Label name=new Label();name.Text=th.Display;name.SetBounds(3,141,itemW-6,25);
+                name.ForeColor=theme.Id==th.Id?theme.AccentInk:theme.Ink;
+                name.Font=new Font("Segoe UI",9f,FontStyle.Bold);
+                name.TextAlign=ContentAlignment.MiddleCenter;name.Cursor=Cursors.Hand;tile.Controls.Add(name);
+                EventHandler applyTheme=(sender,e)=>{settings.ThemeName=th.Id;theme=th;Persist();Build();};
+                tile.Click+=applyTheme;picture.Click+=applyTheme;name.Click+=applyTheme;
             }
-            StudioCard opt=Card("GENERAL OPTIONS","تنظیمات عمومی",x,379,w,165);
+            StudioCard opt=Card("GENERAL OPTIONS","تنظیمات عمومی",x,550,w,200);
             Check(opt,"Start with Windows","اجرا همراه ویندوز",17,46,w/2-25,()=>settings.StartWithWindows,v=>{settings.StartWithWindows=v;SetStartup(true);});
             Check(opt,"Minimize to system tray","انتقال به کنار ساعت",w/2,46,w/2-20,()=>settings.MinimizeToTray,v=>settings.MinimizeToTray=v);
             Check(opt,"Always on top","همیشه روی سایر پنجره‌ها",17,91,w/2-25,()=>settings.AlwaysOnTop,v=>{settings.AlwaysOnTop=v;TopMost=v;});
             Check(opt,"Auto-select known games","انتخاب خودکار بازی‌های ذخیره‌شده",w/2,91,w/2-20,()=>settings.AutoSelectKnownGames,v=>settings.AutoSelectKnownGames=v);
-            canvas.Height=Math.Max(viewport.Height,650);
+            Action(opt,"Check for updates","بررسی بروزرسانی",17,138,210,41,true,(sender,e)=>CheckUpdates(true));
+            canvas.Height=Math.Max(viewport.Height,800);
         }
         void DrawRtss(int x,int w)
         {
@@ -612,13 +821,14 @@ namespace PacePilot
         }
         void DrawAbout(int x,int w)
         {
-            Header(x,w,"About PacePilot","درباره PacePilot","Windows frame pacing utility with six interface designs.","برنامه ویندوزی کنترل فریم با شش طرح متفاوت.");
+            Header(x,w,"About PacePilot","درباره PacePilot","Precision FPS management for Windows gaming.","مدیریت دقیق نرخ فریم برای بازی‌های ویندوز.");
             StudioCard c=Card("PACEPILOT STUDIO 2.0","PacePilot Studio نسخه ۲",x,101,w,367);
             TextAt(c,"Developer: Mr.HamidRouter","توسعه‌دهنده: Mr.HamidRouter",22,62,w-44,35,15,true,theme.Accent);
-            TextAt(c,"English + فارسی  |  6 live themes  |  RTSS framerate engine","فارسی + انگلیسی | شش پوسته واقعی | موتور محدودسازی RTSS",22,110,w-44,40,11,false);
+            TextAt(c,"Bilingual interface  |  Custom themes  |  RTSS integration","رابط دو‌زبانه | طرح‌های اختصاصی | یکپارچگی با RTSS",22,110,w-44,40,11,false);
             TextAt(c,"This is an independent, MIT-licensed RTSS frontend. It is not affiliated with FramePacer, RTSS or Guru3D. NVIDIA Reflex, DLSS frame generation, and a proprietary frame-injection engine are not implemented. RTSS installation requires consent and may need administrator approval.",
                 "این برنامه رابط مستقلی برای RTSS با مجوز MIT است. به FramePacer، RTSS یا Guru3D وابسته نیست. قابلیت‌های NVIDIA Reflex، تولید فریم DLSS و موتور اختصاصی تزریق فریم پیاده‌سازی نشده‌اند. نصب RTSS به اجازه کاربر نیاز دارد.",22,166,w-44,125,10,false,theme.Secondary);
             Action(c,"Project on GitHub","پروژه در گیت‌هاب",22,304,215,40,true,(s,e)=>OpenUrl("https://github.com/MrHamidRouter/PacePilot"));
+            Action(c,"Check for updates","بررسی بروزرسانی",250,304,210,40,false,(s,e)=>CheckUpdates(true));
             canvas.Height=Math.Max(viewport.Height,570);
         }
         void OpenUrl(string url){try{Process.Start(new ProcessStartInfo(url){UseShellExecute=true});}catch(Exception ex){MessageBox.Show(this,ex.Message);}}
@@ -788,6 +998,8 @@ namespace PacePilot
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("داشبورد")))throw new Exception("Persian navigation");
             settings.LanguageCode="en";Build();
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("Dashboard")))throw new Exception("English navigation");
+            if(!GameDiscovery.SelfTest())throw new Exception("Game discovery parser");
+            if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
             string content="[General]\r\nName=keep\r\n[Framerate]\r\nLimit=0\r\nLimitDenominator=99\r\n";
             string patched=RtssProfileFile.SetFrameLimit(content,60);
             if(!patched.Contains("Limit=60")||!patched.Contains("LimitDenominator=1")||!patched.Contains("Name=keep"))throw new Exception("RTSS profile regression");

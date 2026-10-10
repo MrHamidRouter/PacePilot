@@ -1,4 +1,4 @@
-# PacePilot Studio v2.0
+# PacePilot Studio v2.1
 
 **Developer: Mr.HamidRouter**
 
@@ -31,3 +31,13 @@ RTSS is not bundled. If absent, PacePilot asks permission before using `winget` 
 PacePilot is a standalone RTSS frontend, **not a reproduction of FramePacer's proprietary pacing engine**. NVIDIA Reflex, DLSS Frame Generation/Dynamic MFG, proprietary injection and dedicated controller support are **not implemented**. RTSS-compatible games are necessary for FPS caps and monitoring. Aggressive anti-cheat solutions may prohibit external tools. Windows CI is not a substitute for real hardware/gameplay testing.
 
 **Windows 10/11 x64 · .NET Framework 4.x · MIT · Developer Mr.HamidRouter**
+
+### What's new in 2.1
+
+- Six embedded artwork themes with functional FPS controls and a graphical theme gallery.
+- Local Steam, Epic Games and GOG game-library discovery (manual EXE selection remains available).
+- Check official GitHub Releases for newer versions at most once per day or on demand. Download is user-controlled.
+- RTSS permission fix: if profile storage is protected, a narrowly scoped writer can request Windows UAC approval. A successful Windows CI run does not replace on-device game testing.
+- Extract the ZIP and use Setup-PacePilot.bat if RTSS is not installed.
+
+**Developer: Mr.HamidRouter**
