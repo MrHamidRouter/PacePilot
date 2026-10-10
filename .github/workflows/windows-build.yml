@@ -15,7 +15,7 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll Source\Program.cs Source\StudioForm.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /resource:Docs\Previews\01-Neon-Teal.jpg,PacePilot.UI.teal /resource:Docs\Previews\02-Windows-Blue.jpg,PacePilot.UI.light /resource:Docs\Previews\03-Cyber-Purple.jpg,PacePilot.UI.purple /resource:Docs\Previews\04-Racing-Red.jpg,PacePilot.UI.racing /resource:Docs\Previews\05-Esports-Lime.jpg,PacePilot.UI.lime /resource:Docs\Previews\06-Graphite-Gold.jpg,PacePilot.UI.gold Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs
       - name: English and Persian UI self-test
         shell: powershell
         run: |
@@ -49,7 +49,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $repo = $env:GITHUB_REPOSITORY
-          $tag = 'v2.0.2'
+          $tag = 'v2.1.0'
           $package = 'dist/PacePilot-Windows-x64.zip'
           if (-not (Test-Path $package)) { throw 'Release ZIP missing' }
           # Listing releases succeeds with an empty array on first publication.
@@ -63,6 +63,6 @@ jobs:
             gh release upload $tag $package --clobber --repo $repo
           } else {
             Write-Host "Creating first release $tag"
-            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.0.2' --notes 'Windows x64 ZIP including PacePilot.exe, Setup-PacePilot.bat, Persian and English README. Fixes premature RTSS initialization at startup to reduce Direct3D9Ex hook warnings.' --latest
+            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.1.0' --notes 'PacePilot 2.1.0: six integrated artwork themes, installed games library scanning, release update notifications, and administrator-assisted RTSS profile saving. Contains PacePilot.exe, RTSS setup BAT and bilingual documentation.' --latest
           }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publish failed' }
