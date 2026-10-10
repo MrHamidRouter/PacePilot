@@ -89,7 +89,7 @@ namespace PacePilot
             return bitmap;
         }
     }
-    public sealed class StudioCard : Panel
+    public class StudioCard : Panel
     {
         public StudioTheme Theme;
         public StudioCard(StudioTheme t) { Theme=t; DoubleBuffered=true; BackColor=t.Panel; Margin=Padding.Empty; }
