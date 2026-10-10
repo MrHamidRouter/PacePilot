@@ -460,6 +460,49 @@ namespace PacePilot
                 }
                 Persist();SetStatus(L("Verified: ","تأیید شد: ")+currentTarget+"  •  "+n+" FPS",true);
             }
+            catch(RtssElevationRequiredException need)
+            {
+                if(MessageBox.Show(this,
+                    L("Windows protects the RTSS profiles folder. Approve administrator access to save only this FPS profile?",
+                      "پوشه پروفایل‌های RTSS محافظت‌شده است. برای ذخیره همین محدودیت فریم، مجوز Administrator را تأیید می‌کنید؟"),
+                    L("RTSS profile permissions","مجوز ذخیره پروفایل RTSS"),
+                    MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)
+                {
+                    SetStatus(L("Profile write was canceled.","ذخیره پروفایل لغو شد."),false);
+                    return;
+                }
+                try
+                {
+                    ProcessStartInfo info=new ProcessStartInfo(Application.ExecutablePath);
+                    info.Arguments="--rtss-repair "+need.Fps+" "+Convert.ToBase64String(Encoding.UTF8.GetBytes(need.Exe));
+                    info.UseShellExecute=true;
+                    info.Verb="runas";
+                    info.WindowStyle=ProcessWindowStyle.Hidden;
+                    using(Process helper=Process.Start(info))
+                    {
+                        if(helper==null)throw new InvalidOperationException("Elevated helper did not start.");
+                        if(!helper.WaitForExit(120000))
+                            throw new TimeoutException("Timed out waiting for RTSS profile repair.");
+                        if(helper.ExitCode!=0)
+                            throw new InvalidOperationException("RTSS elevated writer returned code "+helper.ExitCode+". See diagnostics.");
+                    }
+                    rtss.VerifyElevatedProfile(need.Exe,need.Fps);
+                    int n=need.Fps;
+                    applied=n;if(n>0)lastNonZero=n;
+                    if(currentTarget=="Global")settings.GlobalLimit=n;
+                    else
+                    {
+                        GameProfile g=settings.Games.FirstOrDefault(x=>String.Equals(x.Exe,currentTarget,StringComparison.OrdinalIgnoreCase));
+                        if(g!=null)g.Limit=n;
+                    }
+                    Persist();SetStatus(L("Verified and saved: ","ذخیره و تأیید شد: ")+n+" FPS",true);
+                }
+                catch(Exception ex)
+                {
+                    SetStatus(L("Could not repair RTSS profile: ","ترمیم پروفایل RTSS ناموفق بود: ")+ex.Message,false);
+                    if(!quiet)MessageBox.Show(this,ex.Message,L("RTSS profile error","خطای پروفایل RTSS"),MessageBoxButtons.OK,MessageBoxIcon.Error);
+                }
+            }
             catch(Exception ex)
             {
                 SetStatus(L("Could not apply: ","اعمال ناموفق: ")+ex.Message,false);
