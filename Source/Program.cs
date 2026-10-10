@@ -526,6 +526,7 @@ namespace PacePilot
     {
         readonly List<float> values = new List<float>();
         public int Limit { get; set; }
+        public bool Persian { get; set; }
         public TrendPanel()
         {
             DoubleBuffered = true;
@@ -564,7 +565,7 @@ namespace PacePilot
             using (Brush brush = new SolidBrush(Color.FromArgb(139, 154, 176)))
             {
                 g.DrawString(maxMs.ToString("0") + " ms", font, brush, plot.Left + 4, plot.Top + 3);
-                g.DrawString("target " + baseMs.ToString("0.0") + " ms", font, brush, plot.Left + 4, Math.Max(plot.Top + 18, reference - 17));
+                g.DrawString((Persian ? "هدف " : "target ") + baseMs.ToString("0.0") + " ms", font, brush, plot.Left + 4, Math.Max(plot.Top + 18, reference - 17));
             }
             if (values.Count < 2) return;
             List<PointF> pts = new List<PointF>();
@@ -652,7 +653,7 @@ namespace PacePilot
             settings = Store.Load();
             if (settings.LanguageCode != "fa") settings.LanguageCode = "en";
             if (settings.Games == null) settings.Games = new List<GameProfile>();
-            Text = "PacePilot 1.4 - Windows Frame Pacing";
+            Text = T("PacePilot 1.4 - Windows Frame Pacing", "PacePilot 1.4 - کنترل فریم ویندوز");
             BackColor = background; ForeColor = Color.White;
             ClientSize = new Size(1060, 730); MinimumSize = new Size(1000, 690);
             StartPosition = FormStartPosition.CenterScreen;
@@ -734,6 +735,7 @@ namespace PacePilot
             if (settings.LanguageCode == code) return;
             string target = selectedTarget;
             settings.LanguageCode = code;
+            Text = T("PacePilot 1.4 - Windows Frame Pacing", "PacePilot 1.4 - کنترل فریم ویندوز");
             Save();
             // Recreate localized controls without touching running RTSS or profiles.
             if (Controls.Count > 0)
@@ -851,7 +853,7 @@ namespace PacePilot
             refresh.Tag = "refresh";
             historyLabel = MakeLabel(surface, "FRAME-TIME HISTORY  ·  measured, never simulated", 29, 431, 745, 27, 9, true, muted);
             graphCard = MakeCard(surface, 28, 466, 744, 124);
-            trend = new TrendPanel(); trend.Dock = DockStyle.Fill; trend.Padding = new Padding(6); graphCard.Controls.Add(trend);
+            trend = new TrendPanel(); trend.Persian = Farsi; trend.Dock = DockStyle.Fill; trend.Padding = new Padding(6); graphCard.Controls.Add(trend);
             status = MakeLabel(surface, "Ready", 30, 598, 740, 28, 10, false, accent);
             trayCheck = new CheckBox(); trayCheck.Text = T("Close to tray", "بستن در کنار ساعت"); trayCheck.Checked = settings.MinimizeToTray;
             trayCheck.ForeColor = muted; trayCheck.Location = new Point(30, 644); trayCheck.Width = 135;
@@ -1123,7 +1125,7 @@ namespace PacePilot
         {
             using (OpenFileDialog f = new OpenFileDialog())
             {
-                f.Filter = "Games (*.exe)|*.exe"; f.Title = T("Select a game executable", "فایل اجرایی بازی را انتخاب کنید");
+                f.Filter = T("Games (*.exe)|*.exe", "بازی‌ها (*.exe)|*.exe"); f.Title = T("Select a game executable", "فایل اجرایی بازی را انتخاب کنید");
                 if (f.ShowDialog(this) == DialogResult.OK) AddGame(f.FileName);
             }
         }
