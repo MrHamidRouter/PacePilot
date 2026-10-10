@@ -24,8 +24,8 @@ using System.Reflection;
 [assembly: AssemblyCompany("Mr.HamidRouter")]
 [assembly: AssemblyProduct("PacePilot")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Mr.HamidRouter")]
-[assembly: AssemblyVersion("1.3.0.0")]
-[assembly: AssemblyFileVersion("1.3.0.0")]
+[assembly: AssemblyVersion("1.4.0.0")]
+[assembly: AssemblyFileVersion("1.4.0.0")]
 
 namespace PacePilot
 {
@@ -42,6 +42,7 @@ namespace PacePilot
     public class AppSettings
     {
         public string RtssFolder { get; set; }
+        public string LanguageCode { get; set; }
         public int GlobalLimit { get; set; }
         public bool MinimizeToTray { get; set; }
         public bool StartWithWindows { get; set; }
@@ -51,7 +52,7 @@ namespace PacePilot
         public List<GameProfile> Games { get; set; }
         public AppSettings()
         {
-            RtssFolder = ""; GlobalLimit = 60; MinimizeToTray = true;
+            RtssFolder = ""; LanguageCode = "en"; GlobalLimit = 60; MinimizeToTray = true;
             LastTarget = "Global"; AutoSelectKnownGames = true; Games = new List<GameProfile>();
         }
     }
@@ -276,7 +277,7 @@ namespace PacePilot
         public string Diagnostics(string exe)
         {
             StringBuilder result = new StringBuilder();
-            result.AppendLine("PacePilot 1.3 RTSS diagnostics  " + DateTime.Now.ToString("u"));
+            result.AppendLine("PacePilot 1.4 RTSS diagnostics  " + DateTime.Now.ToString("u"));
             result.AppendLine("Windows: " + Environment.OSVersion.VersionString);
             try { result.AppendLine("Administrator: " + new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)); }
             catch (Exception e) { result.AppendLine("Elevation check error: " + e.Message); }
@@ -635,6 +636,12 @@ namespace PacePilot
         System.Windows.Forms.Timer ticker;
         bool actuallyClosing;
         readonly bool testMode;
+        bool installingRtss;
+        bool promptedRtss;
+        ComboBox languagePicker;
+        Button rtssButton;
+        private bool Farsi { get { return String.Equals(settings.LanguageCode, "fa", StringComparison.OrdinalIgnoreCase); } }
+        private string T(string english, string persian) { return Farsi ? persian : english; }
         int restoredFps = 60;
         string selectedTarget = "Global";
         bool changingTarget;
@@ -643,8 +650,9 @@ namespace PacePilot
         {
             testMode = runTest;
             settings = Store.Load();
+            if (settings.LanguageCode != "fa") settings.LanguageCode = "en";
             if (settings.Games == null) settings.Games = new List<GameProfile>();
-            Text = "PacePilot 1.3 - Windows Frame Pacing";
+            Text = "PacePilot 1.4 - Windows Frame Pacing";
             BackColor = background; ForeColor = Color.White;
             ClientSize = new Size(1060, 730); MinimumSize = new Size(1000, 690);
             StartPosition = FormStartPosition.CenterScreen;
@@ -662,13 +670,13 @@ namespace PacePilot
                 ticker.Tick += delegate { Tick(); };
                 ticker.Start();
             }
-            Shown += delegate { LayoutContent(); };
+            Shown += delegate { LayoutContent(); if (!testMode) BeginInvoke(new Action(CheckRtssFirstRun)); };
             TopMost = settings.AlwaysOnTop;
             if (startInTray) { WindowState = FormWindowState.Minimized; ShowInTaskbar = false; }
         }
         Label MakeLabel(Control parent, string text, int x, int y, int w, int h, int size, bool bold, Color color)
         {
-            Label l = new Label(); l.Text = text; l.Location = new Point(x, y); l.Size = new Size(w, h);
+            Label l = new Label(); l.Text = UI(text); l.RightToLeft = Farsi ? RightToLeft.Yes : RightToLeft.No; l.TextAlign = Farsi ? ContentAlignment.MiddleRight : ContentAlignment.MiddleLeft; l.Location = new Point(x, y); l.Size = new Size(w, h);
             l.ForeColor = color; l.BackColor = Color.Transparent;
             l.Font = new Font("Segoe UI", size, bold ? FontStyle.Bold : FontStyle.Regular);
             l.AutoEllipsis = true;
@@ -676,7 +684,7 @@ namespace PacePilot
         }
         Button MakeButton(Control parent, string text, int x, int y, int w, int h, Color bg, Color fg)
         {
-            Button b = new Button(); b.Text = text; b.Location = new Point(x,y); b.Size = new Size(w,h);
+            Button b = new Button(); b.Text = UI(text); b.RightToLeft = Farsi ? RightToLeft.Yes : RightToLeft.No; b.Location = new Point(x,y); b.Size = new Size(w,h);
             b.BackColor = bg; b.ForeColor = fg; b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderSize = 0; b.Cursor = Cursors.Hand;
             b.Font = new Font("Segoe UI Semibold", 10, FontStyle.Bold);
@@ -687,6 +695,62 @@ namespace PacePilot
             RoundPanel p = new RoundPanel(); p.Location = new Point(x,y); p.Size = new Size(w,h); p.BackColor = card;
             parent.Controls.Add(p); return p;
         }
+
+        private string UI(string english)
+        {
+            if (!Farsi) return english;
+            switch (english)
+            {
+                case "FRAME CONTROL": return "کنترل فریم";
+                case "TARGET": return "پروفایل هدف";
+                case "+ Select game EXE": return "+ انتخاب فایل بازی";
+                case "Pick running game": return "انتخاب بازی در حال اجرا";
+                case "Remove profile": return "حذف پروفایل";
+                case "SHORTCUTS": return "کلیدهای میانبر";
+                case "Alt + Shift + L     On / Off": return "Alt + Shift + L    روشن / خاموش";
+                case "Alt + Shift + ↑     +1 FPS": return "Alt + Shift + ↑    +۱ فریم";
+                case "Alt + Shift + ↓     -1 FPS": return "Alt + Shift + ↓    -۱ فریم";
+                case "Copy RTSS diagnostics": return "کپی گزارش RTSS";
+                case "RTSS setup / open": return "نصب / باز کردن RTSS";
+                case "Developer: Mr.HamidRouter": return "توسعه‌دهنده: Mr.HamidRouter";
+                case "A smoother frame. A steadier game.": return "فریم روان‌تر، بازی پایدارتر";
+                case "Apply precision pacing with a real RTSS limiter": return "کنترل دقیق فریم با استفاده از RTSS";
+                case "FRAMERATE LIMIT": return "محدودیت نرخ فریم";
+                case "0 = unlimited": return "۰ = بدون محدودیت";
+                case "APPLY LIMIT": return "اعمال محدودیت";
+                case "Disable": return "غیرفعال‌کردن";
+                case "LIVE FPS": return "فریم زنده";
+                case "FRAME TIME": return "زمان فریم";
+                case "Refresh display": return "بروزرسانی نمایشگر";
+                case "FRAME-TIME HISTORY  ·  measured, never simulated": return "نمودار زمان فریم  ·  اندازه‌گیری واقعی";
+                case "Ready": return "آماده";
+                case "Use selected game": return "انتخاب بازی";
+                default: return english;
+            }
+        }
+        private void ChangeLanguage(string code)
+        {
+            if (code != "fa" && code != "en") return;
+            if (settings.LanguageCode == code) return;
+            string target = selectedTarget;
+            settings.LanguageCode = code;
+            Save();
+            // Recreate localized controls without touching running RTSS or profiles.
+            if (Controls.Count > 0)
+            {
+                Control existing = Controls[0];
+                Controls.Remove(existing);
+                existing.Dispose();
+            }
+            presetButtons.Clear();
+            BuildUI();
+            ReloadTargets();
+            targetSelect(target);
+            LayoutContent();
+            if (!testMode) Tick();
+            if (notify != null) SetupTrayMenu();
+        }
+
         void BuildUI()
         {
             // Dock fill and left sibling panels can overlap depending on z-order.
@@ -703,7 +767,14 @@ namespace PacePilot
             shell.Controls.Add(sidebar, 0, 0);
             MakeLabel(sidebar, "◈", 20, 28, 40, 40, 25, true, accent);
             MakeLabel(sidebar, "PacePilot", 58, 29, 151, 42, 20, true, Color.White);
-            MakeLabel(sidebar, "FRAME CONTROL", 26, 80, 175, 23, 9, true, muted);
+            MakeLabel(sidebar, "Language / زبان", 26, 79, 115, 22, 9, true, muted);
+            languagePicker = new ComboBox(); languagePicker.Location = new Point(132, 78);
+            languagePicker.Size = new Size(68, 26); languagePicker.DropDownStyle = ComboBoxStyle.DropDownList;
+            languagePicker.FlatStyle = FlatStyle.Flat; languagePicker.BackColor = Color.FromArgb(36, 45, 59);
+            languagePicker.ForeColor = Color.White; languagePicker.Items.Add("EN"); languagePicker.Items.Add("فا");
+            sidebar.Controls.Add(languagePicker);
+            languagePicker.SelectedIndex = Farsi ? 1 : 0;
+            languagePicker.SelectedIndexChanged += delegate { ChangeLanguage(languagePicker.SelectedIndex == 1 ? "fa" : "en"); };
             MakeLabel(sidebar, "TARGET", 25, 135, 174, 21, 9, true, muted);
             targets = new ComboBox(); targets.Location = new Point(23, 162); targets.Width = 172;
             targets.DropDownStyle = ComboBoxStyle.DropDownList; targets.FlatStyle = FlatStyle.Flat;
@@ -716,10 +787,10 @@ namespace PacePilot
             running.Click += delegate { PickRunning(); };
             Button remove = MakeButton(sidebar, "Remove profile", 22, 302, 174, 33, Color.FromArgb(40, 43, 56), muted);
             remove.Click += delegate { RemoveProfile(); };
-            autoCheck = new CheckBox(); autoCheck.Text = "Auto-select saved games";
+            autoCheck = new CheckBox(); autoCheck.Text = T("Auto-select saved games", "انتخاب خودکار بازی‌های ذخیره‌شده");
             autoCheck.Checked = settings.AutoSelectKnownGames;
             autoCheck.ForeColor = muted; autoCheck.Location = new Point(24, 347); autoCheck.Size = new Size(185, 26);
-            sidebar.Controls.Add(autoCheck);
+            sidebar.Controls.Add(autoCheck); autoCheck.RightToLeft = Farsi ? RightToLeft.Yes : RightToLeft.No;
             autoCheck.CheckedChanged += delegate { settings.AutoSelectKnownGames = autoCheck.Checked; Save(); };
             MakeLabel(sidebar, "SHORTCUTS", 25, 388, 170, 20, 9, true, muted);
             MakeLabel(sidebar, "Alt + Shift + L     On / Off", 25, 413, 180, 22, 9, false, Color.White);
@@ -728,12 +799,12 @@ namespace PacePilot
             Button diagnostic = MakeButton(sidebar, "Copy RTSS diagnostics", 22, 515, 174, 33, Color.FromArgb(40, 43, 56), Color.White);
             diagnostic.Anchor = AnchorStyles.Left | AnchorStyles.Bottom;
             diagnostic.Click += delegate {
-                try { Clipboard.SetText(rtss.Diagnostics(selectedTarget)); status.ForeColor = accent; status.Text = "RTSS diagnostic copied. You can paste it into chat."; }
-                catch (Exception ex) { MessageBox.Show("Could not copy diagnostics: " + ex.Message); }
+                try { Clipboard.SetText(rtss.Diagnostics(selectedTarget)); status.ForeColor = accent; status.Text = T("RTSS diagnostic copied. You can paste it into chat.", "گزارش RTSS کپی شد؛ آن را برای پشتیبانی ارسال کنید."); }
+                catch (Exception ex) { MessageBox.Show(T("Could not copy diagnostics: ", "خطا در کپی گزارش: ") + ex.Message); }
             };
             backend = MakeLabel(sidebar, "RTSS: checking...", 25, 565, 185, 26, 9, true, muted);
             backend.Anchor = AnchorStyles.Left | AnchorStyles.Bottom;
-            Button rtssButton = MakeButton(sidebar, "RTSS setup / open", 22, 607, 174, 37, Color.FromArgb(34, 47, 62), accent);
+            rtssButton = MakeButton(sidebar, "RTSS setup / open", 22, 607, 174, 37, Color.FromArgb(34, 47, 62), accent);
             rtssButton.Anchor = AnchorStyles.Left | AnchorStyles.Bottom;
             rtssButton.Click += delegate { BackendMenu(); };
 
@@ -782,17 +853,17 @@ namespace PacePilot
             graphCard = MakeCard(surface, 28, 466, 744, 124);
             trend = new TrendPanel(); trend.Dock = DockStyle.Fill; trend.Padding = new Padding(6); graphCard.Controls.Add(trend);
             status = MakeLabel(surface, "Ready", 30, 598, 740, 28, 10, false, accent);
-            trayCheck = new CheckBox(); trayCheck.Text = "Close to tray"; trayCheck.Checked = settings.MinimizeToTray;
+            trayCheck = new CheckBox(); trayCheck.Text = T("Close to tray", "بستن در کنار ساعت"); trayCheck.Checked = settings.MinimizeToTray;
             trayCheck.ForeColor = muted; trayCheck.Location = new Point(30, 644); trayCheck.Width = 135;
-            surface.Controls.Add(trayCheck);
+            surface.Controls.Add(trayCheck); trayCheck.RightToLeft = Farsi ? RightToLeft.Yes : RightToLeft.No;
             trayCheck.CheckedChanged += delegate { settings.MinimizeToTray = trayCheck.Checked; Save(); };
-            startupCheck = new CheckBox(); startupCheck.Text = "Start with Windows"; startupCheck.Checked = settings.StartWithWindows;
+            startupCheck = new CheckBox(); startupCheck.Text = T("Start with Windows", "اجرا همراه ویندوز"); startupCheck.Checked = settings.StartWithWindows;
             startupCheck.ForeColor = muted; startupCheck.Location = new Point(184, 644); startupCheck.Width = 171;
-            surface.Controls.Add(startupCheck);
+            surface.Controls.Add(startupCheck); startupCheck.RightToLeft = Farsi ? RightToLeft.Yes : RightToLeft.No;
             startupCheck.CheckedChanged += delegate { SetStartup(startupCheck.Checked, true); };
-            topCheck = new CheckBox(); topCheck.Text = "Always on top"; topCheck.Checked = settings.AlwaysOnTop;
+            topCheck = new CheckBox(); topCheck.Text = T("Always on top", "همیشه روی پنجره‌ها"); topCheck.Checked = settings.AlwaysOnTop;
             topCheck.ForeColor = muted; topCheck.Location = new Point(377, 644); topCheck.Width = 139;
-            surface.Controls.Add(topCheck);
+            surface.Controls.Add(topCheck); topCheck.RightToLeft = Farsi ? RightToLeft.Yes : RightToLeft.No;
             topCheck.CheckedChanged += delegate { TopMost = settings.AlwaysOnTop = topCheck.Checked; Save(); };
             layoutBody.Resize += delegate { LayoutContent(); };
             LayoutContent();
@@ -841,21 +912,21 @@ namespace PacePilot
                 entry.Value.ForeColor = selected ? background : Color.White;
                 entry.Value.FlatAppearance.BorderColor = selected ? Color.White : Color.FromArgb(60, 76, 93);
             }
-            toggleButton.Text = limit == 0 ? "Enable" : "Disable";
+            toggleButton.Text = limit == 0 ? T("Enable", "فعال‌کردن") : T("Disable", "غیرفعال‌کردن");
             bool pending = limit != lastAppliedFps;
-            applyButton.Text = pending ? "APPLY LIMIT *" : "APPLY LIMIT";
+            applyButton.Text = pending ? T("APPLY LIMIT *", "اعمال محدودیت *") : T("APPLY LIMIT", "اعمال محدودیت");
             if (status != null)
             {
                 status.ForeColor = muted;
                 status.Text = pending
-                    ? "Selected " + (limit == 0 ? "unlimited" : limit + " FPS") + " — click APPLY LIMIT to activate in RTSS."
-                    : "Selected " + (limit == 0 ? "unlimited" : limit + " FPS") + " (saved value) — click APPLY LIMIT to verify RTSS.";
+                    ? T("Selected ", "انتخاب‌شده: ") + (limit == 0 ? T("unlimited", "نامحدود") : limit + " FPS") + T(" — click APPLY LIMIT to activate in RTSS.", " — برای فعال‌سازی روی اعمال محدودیت بزنید.")
+                    : T("Selected ", "انتخاب‌شده: ") + (limit == 0 ? T("unlimited", "نامحدود") : limit + " FPS") + T(" (saved value) — click APPLY LIMIT to verify RTSS.", " (مقدار ذخیره‌شده) — برای تأیید روی اعمال بزنید.");
             }
         }
         private void ShowHz()
         {
-            try { monitorHz.Text = "DISPLAY  " + Math.Round(Screen.PrimaryScreen.Bounds.Width == 0 ? 0 : GetDisplayRefreshRate()).ToString() + " Hz"; }
-            catch { monitorHz.Text = "DISPLAY  unknown"; }
+            try { monitorHz.Text = T("DISPLAY  ", "نمایشگر  ") + Math.Round(Screen.PrimaryScreen.Bounds.Width == 0 ? 0 : GetDisplayRefreshRate()).ToString() + " Hz"; }
+            catch { monitorHz.Text = T("DISPLAY  unknown", "نرخ نمایشگر نامشخص"); }
         }
         private double GetDisplayRefreshRate()
         {
@@ -871,12 +942,20 @@ namespace PacePilot
         static class NativeDisplay { [DllImport("gdi32.dll")] public static extern int GetDeviceCaps(IntPtr hdc, int idx); }
         void InitTray()
         {
-            notify = new NotifyIcon(); notify.Icon = Icon ?? SystemIcons.Application; notify.Text = "PacePilot 1.2";
+            notify = new NotifyIcon(); notify.Icon = Icon ?? SystemIcons.Application; notify.Text = "PacePilot 1.4";
+            SetupTrayMenu();
+            notify.DoubleClick += delegate { RestoreWindow(); }; notify.Visible = true;
+        }
+        void SetupTrayMenu()
+        {
+            ContextMenuStrip oldMenu = notify.ContextMenuStrip;
             ContextMenuStrip menu = new ContextMenuStrip();
-            menu.Items.Add("Show PacePilot", null, delegate { RestoreWindow(); });
-            menu.Items.Add("Enable / disable limit", null, delegate { Toggle(); });
-            menu.Items.Add("Exit", null, delegate { actuallyClosing = true; Close(); });
-            notify.ContextMenuStrip = menu; notify.DoubleClick += delegate { RestoreWindow(); }; notify.Visible = true;
+            menu.RightToLeft = Farsi ? RightToLeft.Yes : RightToLeft.No;
+            menu.Items.Add(T("Show PacePilot", "نمایش PacePilot"), null, delegate { RestoreWindow(); });
+            menu.Items.Add(T("Enable / disable limit", "فعال / غیرفعال‌کردن محدودیت"), null, delegate { Toggle(); });
+            menu.Items.Add(T("Exit", "خروج"), null, delegate { actuallyClosing = true; Close(); });
+            notify.ContextMenuStrip = menu;
+            if (oldMenu != null) oldMenu.Dispose();
         }
         void RestoreWindow()
         {
@@ -885,9 +964,87 @@ namespace PacePilot
         void InitBackend()
         {
             string path = RtssControl.FindFolder(settings.RtssFolder);
-            if (rtss.Initialize(path)) { settings.RtssFolder = path; backend.Text = "● RTSS found"; }
-            else backend.Text = "○ RTSS not found";
+            if (rtss.Initialize(path)) { settings.RtssFolder = path; backend.Text = T("● RTSS found", "● RTSS شناسایی شد"); }
+            else backend.Text = T("○ RTSS not found", "○ RTSS نصب نیست");
             Save();
+        }
+        // Winget validates installer SHA256 against the curated package manifest.
+        // We never download an executable from an arbitrary redirect or disable hash checks.
+        private const string OfficialRtss = "https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/";
+        private void CheckRtssFirstRun()
+        {
+            if (testMode || promptedRtss || rtss.IsReady || installingRtss) return;
+            promptedRtss = true;
+            if (MessageBox.Show(this,
+                T("RivaTuner Statistics Server (RTSS) is not installed.\n\nDownload and install the official Guru3D.RTSS package using Windows Package Manager? Windows may ask for administrator approval.\n\nNo installation will start without your consent.",
+                  "RivaTuner Statistics Server (RTSS) نصب نشده است.\n\nآیا بسته رسمی Guru3D.RTSS از طریق مدیریت بسته‌های ویندوز دانلود و نصب شود؟ ممکن است تأیید مدیر سیستم لازم باشد.\n\nبدون موافقت شما نصب آغاز نمی‌شود."),
+                T("Install RTSS?", "نصب RTSS"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                InstallRtss();
+        }
+        private void InstallRtss()
+        {
+            if (installingRtss) return;
+            if (rtss.IsReady) { BackendMenu(); return; }
+            installingRtss = true;
+            rtssButton.Enabled = false;
+            status.ForeColor = muted;
+            status.Text = T("Installing RTSS through winget; please wait and approve Windows prompts...", "نصب RTSS از طریق winget در حال انجام است؛ لطفاً منتظر بمانید و پیام‌های ویندوز را تأیید کنید...");
+            var worker = new BackgroundWorker();
+            worker.DoWork += delegate(object sender, DoWorkEventArgs e)
+            {
+                try
+                {
+                    ProcessStartInfo info = new ProcessStartInfo();
+                    info.FileName = "winget.exe";
+                    info.Arguments = "install --id Guru3D.RTSS --exact --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity";
+                    info.UseShellExecute = true;
+                    info.Verb = "runas";  // Windows UAC prompt only after explicit user consent.
+                    info.WindowStyle = ProcessWindowStyle.Normal;
+                    using (Process process = Process.Start(info))
+                    {
+                        if (process == null) throw new InvalidOperationException("winget did not start");
+                        if (!process.WaitForExit(300000))
+                        {
+                            try { process.Kill(); } catch { }
+                            throw new TimeoutException("RTSS install took longer than 5 minutes");
+                        }
+                        e.Result = process.ExitCode;
+                    }
+                }
+                catch (Exception ex) { e.Result = ex; }
+            };
+            worker.RunWorkerCompleted += delegate(object sender, RunWorkerCompletedEventArgs e)
+            {
+                installingRtss = false;
+                rtssButton.Enabled = true;
+                object outcome = e.Result;
+                string path = RtssControl.FindFolder(settings.RtssFolder);
+                if (rtss.Initialize(path))
+                {
+                    settings.RtssFolder = path;
+                    Save();
+                    try { rtss.Start(); } catch (Exception ex) { status.Text = T("RTSS installed; start failed: ", "RTSS نصب شد؛ اجرا ناموفق بود: ") + ex.Message; }
+                    status.ForeColor = accent;
+                    status.Text = T("RTSS installed and detected successfully.", "RTSS با موفقیت نصب و شناسایی شد.");
+                    backend.Text = T("● RTSS found", "● RTSS شناسایی شد");
+                    Tick();
+                    return;
+                }
+                status.ForeColor = Color.FromArgb(255, 133, 128);
+                status.Text = T("RTSS installation was not completed. Use official Guru3D download.", "نصب RTSS کامل نشد. از دانلود رسمی Guru3D استفاده کنید.");
+                string error = outcome is Exception ? ((Exception)outcome).Message : "winget exit code: " + Convert.ToString(outcome);
+                DialogResult answer = MessageBox.Show(this,
+                    T("Automatic installation failed or was cancelled.\n", "نصب خودکار انجام نشد یا لغو شد.\n") + error +
+                    T("\n\nOpen the official Guru3D RTSS download page? You can also select an existing RTSS folder afterward.", "\n\nصفحه دانلود رسمی RTSS باز شود؟ بعداً می‌توانید پوشه نصب را نیز انتخاب کنید."),
+                    T("RTSS setup", "راه‌اندازی RTSS"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (answer == DialogResult.Yes) OpenRtssDownload();
+            };
+            worker.RunWorkerAsync();
+        }
+        private void OpenRtssDownload()
+        {
+            try { Process.Start(new ProcessStartInfo(OfficialRtss) { UseShellExecute = true }); }
+            catch (Exception ex) { MessageBox.Show(this, ex.Message, T("Browser error", "خطای مرورگر")); }
         }
         void BackendMenu()
         {
@@ -897,26 +1054,32 @@ namespace PacePilot
                 {
                     if (!rtss.IsRunning) rtss.Start();
                     else Process.Start(new ProcessStartInfo(Path.Combine(rtss.Folder, "RTSS.exe")) { UseShellExecute = true });
-                    status.Text = "RTSS started or opened.";
+                    status.Text = T("RTSS started or opened.", "RTSS اجرا یا باز شد.");
                     return;
                 }
-                catch (Exception ex) { status.Text = "RTSS start error: " + ex.Message; }
+                catch (Exception ex) { status.Text = T("RTSS start error: ", "خطا در اجرای RTSS: ") + ex.Message; }
             }
+            DialogResult option = MessageBox.Show(this,
+                T("RTSS is missing.\n\nYES: Download and install with winget.\nNO: Select existing RTSS folder.\nCANCEL: Open official download page.",
+                  "RTSS پیدا نشد.\n\nبله: دانلود و نصب خودکار با winget\nخیر: انتخاب پوشه نصب فعلی\nانصراف: صفحه دانلود رسمی"),
+                T("RTSS setup", "نصب RTSS"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            if (option == DialogResult.Yes) { InstallRtss(); return; }
+            if (option == DialogResult.Cancel) { OpenRtssDownload(); return; }
             using (FolderBrowserDialog f = new FolderBrowserDialog())
             {
-                f.Description = "Select the folder containing RTSS.exe and RTSSHooks64.dll";
+                f.Description = T("Select the folder containing RTSS.exe and RTSSHooks64.dll", "پوشه شامل RTSS.exe و RTSSHooks64.dll را انتخاب کنید");
                 if (f.ShowDialog(this) == DialogResult.OK)
                 {
                     if (rtss.Initialize(f.SelectedPath))
-                    { settings.RtssFolder = f.SelectedPath; Save(); backend.Text = "● RTSS found"; status.Text = "RTSS installation linked."; }
-                    else MessageBox.Show("RTSS.exe or RTSSHooks64.dll was not found in this folder.\nGet RTSS from Guru3D.", "Incorrect RTSS folder", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    { settings.RtssFolder = f.SelectedPath; Save(); backend.Text = T("● RTSS found", "● RTSS شناسایی شد"); status.Text = T("RTSS installation linked.", "پوشه نصب RTSS متصل شد."); }
+                    else MessageBox.Show(T("RTSS.exe or RTSSHooks64.dll was not found in this folder.\nGet RTSS from Guru3D.", "فایل‌های RTSS.exe یا RTSSHooks64.dll در این پوشه پیدا نشدند.\nRTSS را از Guru3D دریافت کنید."), T("Incorrect RTSS folder", "پوشه RTSS نامعتبر"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
         }
         void ReloadTargets()
         {
             changingTarget = true;
-            targets.Items.Clear(); targets.Items.Add("Global (all games)");
+            targets.Items.Clear(); targets.Items.Add(T("Global (all games)", "عمومی (همه بازی‌ها)"));
             foreach (GameProfile item in settings.Games.OrderBy(x => x.Exe, StringComparer.OrdinalIgnoreCase)) targets.Items.Add(item.Exe);
             changingTarget = false;
         }
@@ -948,19 +1111,19 @@ namespace PacePilot
             lastAppliedFps = cap;
             fps.Value = Math.Max(0, Math.Min(1000, cap));
             restoredFps = cap > 0 ? cap : 60;
-            subtitle.Text = selectedTarget == "Global" ? "Global RTSS profile • affects all detected games" : "Selected game: " + selectedTarget;
+            subtitle.Text = selectedTarget == "Global" ? T("Global RTSS profile • affects all detected games", "پروفایل عمومی RTSS • برای تمام بازی‌ها") : T("Selected game: ", "بازی انتخاب‌شده: ") + selectedTarget;
             trend.Limit = cap > 0 ? cap : 60; trend.Reset();
             UpdateSelectionUI();
             status.ForeColor = readFromRtss ? accent : muted;
-            status.Text = readFromRtss ? "Current RTSS limit: " + (cap == 0 ? "OFF" : cap + " FPS") + "  ·  " + selectedTarget
-                : "Target ready — last saved " + cap + " FPS. RTSS read-back unavailable.";
+            status.Text = readFromRtss ? T("Current RTSS limit: ", "محدودیت فعلی RTSS: ") + (cap == 0 ? T("OFF", "خاموش") : cap + " FPS") + "  ·  " + selectedTarget
+                : T("Target ready — last saved ", "پروفایل آماده است — آخرین مقدار ذخیره‌شده: ") + cap + T(" FPS. RTSS read-back unavailable.", " FPS. امکان بازخوانی RTSS نیست.");
             Save();
         }
         void AddGameFromDialog()
         {
             using (OpenFileDialog f = new OpenFileDialog())
             {
-                f.Filter = "Games (*.exe)|*.exe"; f.Title = "Select a game executable";
+                f.Filter = "Games (*.exe)|*.exe"; f.Title = T("Select a game executable", "فایل اجرایی بازی را انتخاب کنید");
                 if (f.ShowDialog(this) == DialogResult.OK) AddGame(f.FileName);
             }
         }
@@ -979,7 +1142,7 @@ namespace PacePilot
         {
             using (Form chooser = new Form())
             {
-                chooser.Text = "Choose a running game"; chooser.BackColor = background; chooser.ForeColor = Color.White;
+                chooser.Text = T("Choose a running game", "انتخاب بازی در حال اجرا"); chooser.BackColor = background; chooser.ForeColor = Color.White;
                 chooser.ClientSize = new Size(570, 430); chooser.StartPosition = FormStartPosition.CenterParent;
                 ListBox list = new ListBox(); list.Dock = DockStyle.Fill; list.BackColor = card; list.ForeColor = Color.White;
                 list.Font = new Font("Segoe UI", 11); chooser.Controls.Add(list);
@@ -1015,17 +1178,24 @@ namespace PacePilot
             string removed = selectedTarget;
             // Only remove PacePilot's saved entry, never remove an RTSS profile made by another application.
             settings.Games.RemoveAll(x => String.Equals(x.Exe, removed, StringComparison.OrdinalIgnoreCase));
-            ReloadTargets(); targetSelect("Global"); status.Text = "Removed from PacePilot list. Existing RTSS settings were not modified.";
+            ReloadTargets(); targetSelect("Global"); status.Text = T("Removed from PacePilot list. Existing RTSS settings were not modified.", "پروفایل فقط از PacePilot حذف شد؛ تنظیمات RTSS تغییر نکردند.");
         }
         private bool EnsureReady()
         {
-            if (!rtss.IsReady) { MessageBox.Show("Install RivaTuner Statistics Server (RTSS) from Guru3D, then select its folder under RTSS setup.\nThe pacer will not pretend to work without it.", "RTSS required", MessageBoxButtons.OK, MessageBoxIcon.Warning); return false; }
+            if (!rtss.IsReady) { BackendMenu(); return false; }
             if (!rtss.IsRunning)
             {
                 try { if (!rtss.Start()) throw new Exception("RTSS process did not start."); }
-                catch (Exception ex) { MessageBox.Show("RTSS failed to launch:\n" + ex.Message, "RTSS offline"); return false; }
+                catch (Exception ex) { MessageBox.Show(T("RTSS failed to launch:\n", "اجرای RTSS ناموفق بود:\n") + ex.Message, T("RTSS offline", "RTSS غیرفعال")); return false; }
             }
             return true;
+        }
+        private string LocalizeWarning(string msg)
+        {
+            if (!Farsi) return msg;
+            if (msg.StartsWith("This game is on")) return "این بازی در فهرست ضدتقلب قرار دارد. تنظیمات RTSS تغییر نمی‌کند.";
+            if (msg.StartsWith("Anti-cheat process detected")) return "فرایند ضدتقلب فعال است: " + msg + " — ابتدا بازی محافظت‌شده را ببندید.";
+            return "حالت عمومی ممکن است بر بازی‌های محافظت‌شده اثر بگذارد. از محدودکننده خارجی در این بازی‌ها استفاده نکنید.";
         }
         bool Apply(bool hotkey)
         {
@@ -1034,18 +1204,18 @@ namespace PacePilot
             if (warning.Length != 0 && (selectedTarget != "Global" || warning.StartsWith("Anti-cheat process", StringComparison.Ordinal)))
             {
                 status.ForeColor = Color.FromArgb(255, 133, 128);
-                status.Text = warning;
-                if (!hotkey) MessageBox.Show(warning, "Anti-cheat safety", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                status.Text = LocalizeWarning(warning);
+                if (!hotkey) MessageBox.Show(status.Text, T("Anti-cheat safety", "ایمنی ضدتقلب"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
             if (selectedTarget == "Global" && !globalConsent)
             {
                 if (hotkey)
                 {
-                    status.Text = "Open PacePilot and confirm global RTSS control before using global hotkeys.";
+                    status.Text = T("Open PacePilot and confirm global RTSS control before using global hotkeys.", "برای میانبرهای عمومی ابتدا کنترل RTSS را در PacePilot تأیید کنید.");
                     return false;
                 }
-                if (MessageBox.Show("Global limits also affect protected online games. Avoid using RTSS with anti-cheat-enabled titles.\n\nApply global limit?", "Global profile warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                if (MessageBox.Show(T("Global limits also affect protected online games. Avoid using RTSS with anti-cheat-enabled titles.\n\nApply global limit?", "محدودیت عمومی روی بازی‌های آنلاین محافظت‌شده هم اثر می‌گذارد. با بازی‌های دارای ضدتقلب از RTSS استفاده نکنید.\n\nمحدودیت عمومی اعمال شود؟"), T("Global profile warning", "هشدار پروفایل عمومی"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
                     return false;
                 globalConsent = true;
             }
@@ -1065,15 +1235,15 @@ namespace PacePilot
                 UpdateSelectionUI();
                 Save();
                 status.ForeColor = accent;
-                status.Text = limit == 0 ? "RTSS limit disabled and verified  ·  " + selectedTarget
-                    : "RTSS confirmed: " + selectedTarget + "  ·  " + limit + " FPS";
+                status.Text = limit == 0 ? T("RTSS limit disabled and verified  ·  ", "غیرفعال‌شدن محدودیت RTSS تأیید شد  ·  ") + selectedTarget
+                    : T("RTSS confirmed: ", "محدودیت RTSS تأیید شد: ") + selectedTarget + "  ·  " + limit + " FPS";
                 return true;
             }
             catch (Exception ex)
             {
                 status.ForeColor = Color.FromArgb(255, 133, 128);
-                status.Text = "Apply failed: " + ex.Message;
-                if (!hotkey) MessageBox.Show(status.Text, "RTSS error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                status.Text = T("Apply failed: ", "خطا در اعمال محدودیت: ") + ex.Message;
+                if (!hotkey) MessageBox.Show(status.Text, T("RTSS error", "خطای RTSS"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
         }
@@ -1124,7 +1294,7 @@ namespace PacePilot
                 }
                 catch { /* foreground window may disappear */ }
             }
-            backend.Text = rtss.IsReady ? rtss.IsRunning ? "● RTSS running" : "◌ RTSS is stopped" : "○ RTSS not found";
+            backend.Text = rtss.IsReady ? rtss.IsRunning ? T("● RTSS running", "● RTSS فعال است") : T("◌ RTSS is stopped", "◌ RTSS متوقف است") : T("○ RTSS not found", "○ RTSS نصب نیست");
             backend.ForeColor = rtss.IsRunning ? accent : muted;
             FrameSample sample = rtss.IsRunning ? LiveFrames.Read(selectedTarget) : new FrameSample();
             if (sample.Valid)
@@ -1139,7 +1309,7 @@ namespace PacePilot
         {
             if (testMode) return;
             try { Store.Save(settings); }
-            catch (Exception ex) { if (status != null) status.Text = "Settings not saved: " + ex.Message; }
+            catch (Exception ex) { if (status != null) status.Text = T("Settings not saved: ", "تنظیمات ذخیره نشد: ") + ex.Message; }
         }
         void SetStartup(bool enabled, bool persist)
         {
@@ -1155,7 +1325,7 @@ namespace PacePilot
             }
             catch (Exception ex)
             {
-                if (persist) { settings.StartWithWindows = false; status.Text = "Startup setup failed: " + ex.Message; }
+                if (persist) { settings.StartWithWindows = false; status.Text = T("Startup setup failed: ", "خطا در اجرای خودکار: ") + ex.Message; }
             }
         }
         protected override void OnHandleCreated(EventArgs e)
@@ -1225,6 +1395,17 @@ namespace PacePilot
             fps.Value = 75;
             if (presetButtons.Values.Any(b => b.BackColor == accent) || !status.Text.Contains("75 FPS"))
                 throw new InvalidOperationException("Custom FPS selection failed.");
+            // Language regression: rebuild controls, confirm translations and selected FPS.
+            ChangeLanguage("fa");
+            if (languagePicker.SelectedIndex != 1 || !titleLabel.Text.Contains("فریم") ||
+                targets.Items[0].ToString().IndexOf("عمومی", StringComparison.Ordinal) < 0)
+                throw new InvalidOperationException("Persian UI / RTL translation failed.");
+            presetButtons[60].PerformClick();
+            if (fps.Value != 60 || presetButtons[60].BackColor != accent)
+                throw new InvalidOperationException("FPS preset failed in Persian UI.");
+            ChangeLanguage("en");
+            if (languagePicker.SelectedIndex != 0 || !titleLabel.Text.Contains("smoother"))
+                throw new InvalidOperationException("English UI switch failed.");
             // Restores only in-memory UI state; Apply was never invoked.
             fps.Value = lastAppliedFps;
             string sample = "[General]\r\nName=keep\r\n[Framerate]\r\nLimit=0\r\nLimitDenominator=100\r\n[OSD]\r\nEnable=1\r\n";
@@ -1287,7 +1468,7 @@ namespace PacePilot
                             test.RunUiSelfCheck();
                             test.Close();
                         }
-                        File.WriteAllText(log, "PASS: layout 1000x690, 1280x800, 1920x1080; FPS 30/144/custom selection; RTSS profile patching regression.\r\nBackend RTSS behavior requires a real-game test on Windows.\r\n");
+                        File.WriteAllText(log, "PASS: English/Persian localization switch, layout 1000x690, 1280x800, 1920x1080, FPS buttons, RTSS profile patch regression.\r\nBackend RTSS/winget installation requires an interactive Windows test.\r\n");
                         Environment.ExitCode = 0;
                     }
                     catch (Exception ex)

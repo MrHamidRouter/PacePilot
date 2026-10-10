@@ -7,14 +7,15 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Build native Windows GUI EXE
+      - name: Build Windows GUI EXE
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
           "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll Source\Program.cs
-      - name: UI self-test
+      - name: English and Persian UI self-test
         shell: powershell
         run: |
           Remove-Item "$env:TEMP\PacePilot-selftest.log" -ErrorAction SilentlyContinue
@@ -22,8 +23,10 @@ jobs:
           $log = Get-Content "$env:TEMP\PacePilot-selftest.log" -Raw -ErrorAction Stop
           Write-Host $log
           if ($p.ExitCode -ne 0 -or -not $log.StartsWith('PASS:')) { throw 'UI self-test failed' }
-      - uses: actions/upload-artifact@v4
+      - name: Publish standalone EXE artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: PacePilot-Windows-x64-v1.3
+          name: PacePilot-Windows-x64-v1.4
           path: Bin/PacePilot.exe
           if-no-files-found: error
+          retention-days: 90
