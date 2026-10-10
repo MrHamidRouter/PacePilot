@@ -49,7 +49,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $repo = $env:GITHUB_REPOSITORY
-          $tag = 'v2.0.1'
+          $tag = 'v2.0.2'
           $package = 'dist/PacePilot-Windows-x64.zip'
           if (-not (Test-Path $package)) { throw 'Release ZIP missing' }
           # Listing releases succeeds with an empty array on first publication.
@@ -63,6 +63,6 @@ jobs:
             gh release upload $tag $package --clobber --repo $repo
           } else {
             Write-Host "Creating first release $tag"
-            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.0.1' --notes 'Windows x64 ZIP including PacePilot.exe, Setup-PacePilot.bat (RTSS installation via winget), and Persian/English READMEs.' --latest
+            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.0.2' --notes 'Windows x64 ZIP including PacePilot.exe, Setup-PacePilot.bat, Persian and English README. Fixes premature RTSS initialization at startup to reduce Direct3D9Ex hook warnings.' --latest
           }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publish failed' }
