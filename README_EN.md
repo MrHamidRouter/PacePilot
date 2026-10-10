@@ -6,7 +6,11 @@ An original, open-source Windows frontend for RTSS FPS limiting with **six disti
 
 ### Download
 
-Open [GitHub Actions](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml), select a **successful** Windows build and download `PacePilot-Windows-x64-v2.0`. Extract and run `PacePilot.exe`. If no build artifact is available, download the source and use the single `Start-PacePilot.cmd` launcher (build + self-test + run).
+Get the `PacePilot-Windows-x64.zip` file from a successful [GitHub Actions Windows build](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml). Extract the ZIP. If RTSS is not installed, run **`Setup-PacePilot.bat`** once: it detects existing RTSS, installs it with `winget` if needed, then starts `PacePilot.exe`. Otherwise run the EXE directly. Administrator confirmation may appear.
+
+```bat
+winget install --id Guru3D.RTSS --exact --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+```
 
 ### Features
 
