@@ -625,7 +625,9 @@ namespace PacePilot
         void InitializeRtss()
         {
             string dir=RtssControl.FindFolder(settings.RtssFolder);
-            if(rtss.Initialize(dir)) {settings.RtssFolder=dir;Persist(); try{rtss.Start();}catch{} }
+            // Detect RTSS without starting its Direct3D hooks during PacePilot startup.
+            // RTSS is launched on first Apply or explicitly through the RTSS Tools page.
+            if(rtss.Initialize(dir)) {settings.RtssFolder=dir;Persist();}
         }
         void AskInstall(){AskInstall(false);}
         void AskInstall(bool explicitClick)
@@ -674,7 +676,21 @@ namespace PacePilot
         }
         void OpenRtss()
         {
-            try{if(!rtss.IsReady)InitializeRtss();if(!rtss.IsReady)throw new Exception("RTSS not installed");rtss.Start();Process.Start(new ProcessStartInfo(Path.Combine(rtss.Folder,"RTSS.exe")){UseShellExecute=true});RefreshRtssStatus();}
+            try
+            {
+                if(!rtss.IsReady)InitializeRtss();
+                if(!rtss.IsReady)throw new Exception("RTSS not installed");
+                if(!rtss.IsRunning)
+                {
+                    if(!rtss.Start())throw new Exception(L("RTSS could not be started.","RTSS اجرا نشد."));
+                }
+                else
+                {
+                    // When RTSS is running, a second invocation may bring up its UI.
+                    Process.Start(new ProcessStartInfo(Path.Combine(rtss.Folder,"RTSS.exe")){UseShellExecute=true});
+                }
+                RefreshRtssStatus();
+            }
             catch(Exception ex){MessageBox.Show(this,ex.Message);}
         }
         void SetStartup(bool persist)
