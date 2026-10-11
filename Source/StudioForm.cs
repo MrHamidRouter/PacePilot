@@ -337,7 +337,7 @@ namespace PacePilot
                 timer=new System.Windows.Forms.Timer(); timer.Interval=500; timer.Tick+=(s,e)=>UpdateLive(); timer.Start();
                 SetStartup(false);
                 // Inventory is queried only once on a background worker, never on the UI timer.
-                Shown+=(s,e)=>BeginLoadHardwareInventory();
+                Load+=(s,e)=>BeginLoadHardwareInventory();
                 Shown+=(s,e)=>BeginInvoke(new System.Action(()=>{AskInstall();ScanInstalledGames(false);CheckUpdates(false);}));
             }
             TopMost=settings.AlwaysOnTop;
