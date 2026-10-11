@@ -324,7 +324,7 @@ namespace PacePilot
             ClientSize=new Size(1340,865); MinimumSize=new Size(950,665);
             Font=new Font("Segoe UI",9f); StartPosition=FormStartPosition.CenterScreen;
             AutoScaleMode=AutoScaleMode.Dpi;
-            Text="PacePilot Studio v2.4  |  Mr.HamidRouter";
+            Text="PacePilot Studio v2.4.1  |  Mr.HamidRouter";
             try { Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { Icon=SystemIcons.Application; }
             currentTarget=String.IsNullOrEmpty(settings.LastTarget)?"Global":settings.LastTarget;
             Build();
@@ -531,9 +531,26 @@ namespace PacePilot
                 Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,44,tileW,75);card.Controls.Add(panel);
                 Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,24,8,false,theme.Secondary);
                 Label value=TextAt(panel,"—","—",7,31,tileW-12,36,tileW<98?10:13,true,theme.Accent);
+                if(keys[i]!="CPU"&&keys[i]!="RAM")
+                {
+                    panel.Cursor=Cursors.Help;
+                    value.Cursor=Cursors.Help;
+                    name.Cursor=Cursors.Help;
+                    EventHandler sensorHelp=(sender,e)=>ShowSensorHelp();
+                    panel.Click+=sensorHelp;value.Click+=sensorHelp;name.Click+=sensorHelp;
+                }
                 dashboardHardware[keys[i]]=value;
             }
             UpdateHardwareStrip();
+        }
+        void ShowSensorHelp()
+        {
+            string info=L("Primary sensor provider: ","منبع اصلی سنسورها: ")+HwInfoBridge.Status+"\n"+
+                L("Other sensor providers: ","منابع جایگزین: ")+HardwareFallback.Status+"\n"+
+                L("Detected fallback sensors: ","سنسورهای تشخیص‌داده‌شده: ")+HardwareFallback.ObservedSensors.ToString()+"\n\n"+
+                L("To display GPU temperature, clock, power and VRM: Open HWiNFO64 Sensors, enable Shared Memory Support in its MAIN Settings. Alternatively run LibreHardwareMonitor. On free HWiNFO, Shared Memory can turn off after 12 hours. A motherboard without a VRM temperature sensor cannot provide a VRM reading.",
+                  "برای نمایش دما، فرکانس، توان GPU و VRM: نرم‌افزار HWiNFO64 را در حالت Sensors باز کنید و در تنظیمات اصلی آن Shared Memory Support را فعال کنید. یا LibreHardwareMonitor را اجرا کنید. در نسخه رایگان HWiNFO این گزینه ممکن است پس از ۱۲ ساعت خاموش شود. اگر مادربرد سنسور دمای VRM نداشته باشد، مقدار VRM قابل نمایش نیست.");
+            MessageBox.Show(this,info,L("Hardware sensor diagnostics","عیب‌یابی سنسورهای سخت‌افزار"),MessageBoxButtons.OK,MessageBoxIcon.Information);
         }
         void UpdateHardwareStrip()
         {
@@ -829,6 +846,7 @@ namespace PacePilot
             lastFrame=sample;
             lastSystem=sampler.Read();
             HwInfoBridge.Enrich(ref lastSystem);
+            HardwareFallback.Enrich(ref lastSystem);
             if(cpuTempMonitor!=null&&!cpuTempMonitor.IsDisposed)cpuTempMonitor.Text=SensorText(lastSystem.CpuTempC,"°C");
             if(gpuLoadMonitor!=null&&!gpuLoadMonitor.IsDisposed)gpuLoadMonitor.Text=SensorText(lastSystem.GpuLoad,"%");
             if(gpuTempMonitor!=null&&!gpuTempMonitor.IsDisposed)gpuTempMonitor.Text=SensorText(lastSystem.GpuTempC,"°C");
@@ -837,7 +855,9 @@ namespace PacePilot
             if(vramMonitor!=null&&!vramMonitor.IsDisposed)vramMonitor.Text=lastSystem.VramUsedGb.HasValue?
                 lastSystem.VramUsedGb.Value.ToString("0.0")+" / "+(lastSystem.VramTotalGb.HasValue?lastSystem.VramTotalGb.Value.ToString("0.0"):"?")+" GB":"—";
             if(vrmMonitor!=null&&!vrmMonitor.IsDisposed)vrmMonitor.Text=SensorText(lastSystem.VrmTempC,"°C");
-            if(sensorStatusMonitor!=null&&!sensorStatusMonitor.IsDisposed)sensorStatusMonitor.Text=HwInfoBridge.Status;
+            if(sensorStatusMonitor!=null&&!sensorStatusMonitor.IsDisposed)
+                sensorStatusMonitor.Text=lastSystem.GpuLoad.HasValue||lastSystem.GpuTempC.HasValue?
+                    L("GPU sensor feed active","سنسور گرافیک متصل است"):L("Sensor disconnected: click a blank GPU/VRM card for setup","سنسور متصل نیست؛ برای راهنما روی کارت خالی کلیک کنید");
             if(cpuMonitorValue!=null&&!cpuMonitorValue.IsDisposed)cpuMonitorValue.Text=lastSystem.CpuPercent.HasValue?lastSystem.CpuPercent.Value.ToString("0")+"%":"—";
             if(ramMonitorValue!=null&&!ramMonitorValue.IsDisposed)ramMonitorValue.Text=lastSystem.RamTotalGb>0?lastSystem.RamUsedGb.ToString("0.0")+" / "+lastSystem.RamTotalGb.ToString("0.0")+" GB":"—";
             if(osdMonitorValue!=null&&!osdMonitorValue.IsDisposed)osdMonitorValue.Text=settings.OsdEnabled?L("ON  •  Alt+Shift+O","فعال  •  Alt+Shift+O"):L("OFF  •  Alt+Shift+O","خاموش  •  Alt+Shift+O");
@@ -1164,7 +1184,7 @@ namespace PacePilot
         void DrawAbout(int x,int w)
         {
             Header(x,w,"About PacePilot","درباره PacePilot","Precision FPS management for Windows gaming.","مدیریت دقیق نرخ فریم برای بازی‌های ویندوز.");
-            StudioCard c=Card("PACEPILOT STUDIO 2.3","PacePilot Studio نسخه ۲.۳",x,101,w,367);
+            StudioCard c=Card("PACEPILOT STUDIO 2.4.1","PacePilot Studio نسخه ۲.۴.۱",x,101,w,367);
             TextAt(c,"Developer: Mr.HamidRouter","توسعه‌دهنده: Mr.HamidRouter",22,62,w-44,35,15,true,theme.Accent);
             TextAt(c,"Bilingual interface  |  Custom themes  |  RTSS integration","رابط دو‌زبانه | طرح‌های اختصاصی | یکپارچگی با RTSS",22,110,w-44,40,11,false);
             TextAt(c,"This is an independent, MIT-licensed RTSS frontend. It is not affiliated with FramePacer, RTSS or Guru3D. NVIDIA Reflex, DLSS frame generation, and a proprietary frame-injection engine are not implemented. RTSS installation requires consent and may need administrator approval.",
@@ -1353,6 +1373,7 @@ namespace PacePilot
             if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
             if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
             if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
+            if(!HardwareFallback.SelfTest())throw new Exception("WMI/Windows GPU sensor fallback");
             if(!RamReadiness.SelfTest()||!FrameActivityBar.SelfTest())throw new Exception("RAM readiness or real frametime visual");
             // Native vector graphics should always render at scale without needing JPG artwork.
             using(PremiumHero hero=new PremiumHero(StudioTheme.All[0]))
