@@ -4,7 +4,7 @@ cd /d "%~dp0"
 title PacePilot RTSS Setup - Mr.HamidRouter
 
 echo ================================================
-echo PacePilot Studio 2.0 - Developer: Mr.HamidRouter
+echo PacePilot Studio - Developer: Mr.HamidRouter
 echo ================================================
 echo Checking RivaTuner Statistics Server (RTSS)...
 
@@ -32,7 +32,13 @@ if errorlevel 1 (
 )
 
 echo [INSTALL] Downloading and installing RTSS via the official winget package...
-echo [INFO] An Administrator UAC prompt may appear.
+echo [INFO] Windows may display UAC and an Unknown Publisher warning if this EXE is unsigned.
+echo [INFO] RTSS is a separate Guru3D package and will be downloaded only with your approval.
+choice /c YN /m "Install RTSS through winget now?"
+if errorlevel 2 (
+    echo [CANCELLED] RTSS installation was not authorized.
+    exit /b 3
+)
 winget install --id Guru3D.RTSS --exact --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
 if errorlevel 1 (
     echo [ERROR] RTSS installation failed.
