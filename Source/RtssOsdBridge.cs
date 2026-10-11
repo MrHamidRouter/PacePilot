@@ -36,8 +36,7 @@ namespace PacePilot
             if(sys.CpuTempC.HasValue) text.Append("   CPU ").Append(sys.CpuTempC.Value.ToString("0")).Append("C");
             if(sys.GpuLoad.HasValue || sys.GpuTempC.HasValue || sys.GpuPowerW.HasValue || sys.GpuClockMhz.HasValue)
             {
-                text.Append("
-GPU");
+                text.Append("\nGPU");
                 if(sys.GpuLoad.HasValue)text.Append(' ').Append(sys.GpuLoad.Value.ToString("0")).Append('%');
                 if(sys.GpuTempC.HasValue)text.Append(' ').Append(sys.GpuTempC.Value.ToString("0")).Append('C');
                 if(sys.GpuClockMhz.HasValue)text.Append(' ').Append(sys.GpuClockMhz.Value.ToString("0")).Append("MHz");
@@ -45,8 +44,7 @@ GPU");
             }
             if(sys.VramUsedGb.HasValue || sys.VrmTempC.HasValue)
             {
-                text.Append("
-");
+                text.Append("\n");
                 if(sys.VramUsedGb.HasValue)text.Append("VRAM ").Append(sys.VramUsedGb.Value.ToString("0.0")).Append("GB");
                 if(sys.VrmTempC.HasValue)text.Append("   VRM ").Append(sys.VrmTempC.Value.ToString("0")).Append('C');
             }
