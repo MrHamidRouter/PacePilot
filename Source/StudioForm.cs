@@ -1163,6 +1163,10 @@ namespace PacePilot
             if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
             if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
             if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
+            if(!Guard.IsProtected("TslGame.exe") || Guard.IsProtected("Cyberpunk2077.exe") ||
+               !Guard.IsLauncherHelper("UnrealCEFSubProcess_3071.exe") ||
+               Guard.ShouldBlock("Cyberpunk2077.exe",Guard.Check("Cyberpunk2077.exe")))
+                throw new Exception("Protected title / unrelated game compatibility guard");
             currentPage="monitor";Build();if(!canvas.Controls.OfType<StudioCard>().Any())throw new Exception("Performance monitor page");
             string content="[General]\r\nName=keep\r\n[Framerate]\r\nLimit=0\r\nLimitDenominator=99\r\n";
             string patched=RtssProfileFile.SetFrameLimit(content,60);
