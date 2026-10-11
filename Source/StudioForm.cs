@@ -289,7 +289,7 @@ namespace PacePilot
         SystemSample lastSystem;
         FrameSample lastFrame;
         Label cpuMonitorValue,ramMonitorValue,osdMonitorValue;
-        Label cpuTempMonitor,gpuLoadMonitor,gpuTempMonitor,gpuClockMonitor,gpuPowerMonitor,vramMonitor,vrmMonitor,sensorStatusMonitor;
+        Label cpuTempMonitor,gpuLoadMonitor,gpuTempMonitor,gpuClockMonitor,gpuPowerMonitor,vramMonitor,gpuVrmMonitor,vrmMonitor,sensorStatusMonitor;
         StudioTheme theme;
         string currentTarget="Global", currentPage="dashboard";
         bool rebuilding=false, finishing=false, prompted=false, installing=false;
@@ -521,10 +521,10 @@ namespace PacePilot
         void MakeHardwareStrip(int x,int y,int w,int h)
         {
             StudioCard card=Card("HARDWARE TELEMETRY  •  SYSTEM SENSORS","سنسورهای سخت‌افزاری • پایش زنده",x,y,w,h);
-            string[] keys={"CPU","GPU","VRAM","RAM","PWR","TEMP","VRM"};
-            string[] en={"CPU","GPU Load","VRAM","RAM","GPU Power","GPU Temp","VRM Temp"};
-            string[] fa={"پردازنده","گرافیک","حافظه گرافیک","رم","توان GPU","دمای GPU","دمای VRM"};
-            int padding=11,gap=5,tileW=(w-2*padding-gap*6)/7;
+            string[] keys={"CPU","GPU","VRAM","RAM","PWR","TEMP","GVRM","VRM"};
+            string[] en={"CPU","GPU Load","VRAM","RAM","GPU Power","GPU Temp","GPU VRM Temp","Board VRM Temp"};
+            string[] fa={"پردازنده","گرافیک","حافظه گرافیک","رم","توان GPU","دمای GPU","دمای VRM گرافیک","دمای VRM مادربرد"};
+            int padding=11,gap=5,tileW=(w-2*padding-gap*7)/8;
             for(int i=0;i<keys.Length;i++)
             {
                 int x0=padding+i*(tileW+gap);
@@ -557,11 +557,11 @@ namespace PacePilot
             string ram=lastSystem.RamTotalGb>0?lastSystem.RamUsedGb.ToString("0.0")+"/"+lastSystem.RamTotalGb.ToString("0.0")+" GB":"—";
             string vram=lastSystem.VramUsedGb.HasValue?
                 lastSystem.VramUsedGb.Value.ToString("0.0")+"/"+(lastSystem.VramTotalGb.HasValue?lastSystem.VramTotalGb.Value.ToString("0.0"):"?")+" GB":"—";
-            string[] keys={"CPU","GPU","VRAM","RAM","PWR","TEMP","VRM"};
+            string[] keys={"CPU","GPU","VRAM","RAM","PWR","TEMP","GVRM","VRM"};
             string[] values={
                 lastSystem.CpuPercent.HasValue?lastSystem.CpuPercent.Value.ToString("0")+"%":"—",
                 SensorText(lastSystem.GpuLoad,"%"),vram,ram,SensorText(lastSystem.GpuPowerW,"W"),
-                SensorText(lastSystem.GpuTempC,"°C"),SensorText(lastSystem.VrmTempC,"°C")
+                SensorText(lastSystem.GpuTempC,"°C"),SensorText(lastSystem.GpuVrmTempC,"°C"),SensorText(lastSystem.VrmTempC,"°C")
             };
             for(int i=0;i<keys.Length;i++)
             {
@@ -855,6 +855,7 @@ namespace PacePilot
             if(gpuPowerMonitor!=null&&!gpuPowerMonitor.IsDisposed)gpuPowerMonitor.Text=SensorText(lastSystem.GpuPowerW,"W");
             if(vramMonitor!=null&&!vramMonitor.IsDisposed)vramMonitor.Text=lastSystem.VramUsedGb.HasValue?
                 lastSystem.VramUsedGb.Value.ToString("0.0")+" / "+(lastSystem.VramTotalGb.HasValue?lastSystem.VramTotalGb.Value.ToString("0.0"):"?")+" GB":"—";
+            if(gpuVrmMonitor!=null&&!gpuVrmMonitor.IsDisposed)gpuVrmMonitor.Text=SensorText(lastSystem.GpuVrmTempC,"°C");
             if(vrmMonitor!=null&&!vrmMonitor.IsDisposed)vrmMonitor.Text=SensorText(lastSystem.VrmTempC,"°C");
             if(sensorStatusMonitor!=null&&!sensorStatusMonitor.IsDisposed)
                 sensorStatusMonitor.Text=lastSystem.GpuLoad.HasValue||lastSystem.GpuTempC.HasValue?
@@ -1151,10 +1152,13 @@ namespace PacePilot
             gpuPowerMonitor=TextAt(gpuPower,"—","—",16,48,third-32,60,22,true,theme.Accent);
             StudioCard vram=Card("VIDEO MEMORY","حافظه گرافیکی VRAM",x+third+space,898,third,129);
             vramMonitor=TextAt(vram,"—","—",14,48,third-28,60,17,true,theme.Accent);
-            StudioCard vrm=Card("VRM TEMPERATURE","دمای VRM",x+2*(third+space),898,third,129);
-            vrmMonitor=TextAt(vrm,"—","—",16,48,third-32,60,21,true,theme.Accent);
-            StudioCard cpuTemp=Card("CPU PACKAGE TEMPERATURE","دمای پردازنده CPU",x,1039,w,102);
-            cpuTempMonitor=TextAt(cpuTemp,"—","—",18,47,w-36,42,22,true,theme.Accent);
+            StudioCard gpuVrm=Card("GPU VRM TEMPERATURE","دمای VRM گرافیک",x+2*(third+space),898,third,129);
+            gpuVrmMonitor=TextAt(gpuVrm,"—","—",16,48,third-32,60,21,true,theme.Accent);
+            int bottomHalf=(w-12)/2;
+            StudioCard cpuTemp=Card("CPU PACKAGE TEMPERATURE","دمای پردازنده CPU",x,1039,bottomHalf,102);
+            cpuTempMonitor=TextAt(cpuTemp,"—","—",18,47,bottomHalf-36,42,22,true,theme.Accent);
+            StudioCard boardVrm=Card("MOTHERBOARD VRM TEMPERATURE","دمای VRM مادربرد",x+bottomHalf+12,1039,bottomHalf,102);
+            vrmMonitor=TextAt(boardVrm,"—","—",18,47,bottomHalf-36,42,22,true,theme.Accent);
             TextAt(canvas,"GPU/VRM readings require HWiNFO64 Sensors: Shared Memory Support.",
                 "حسگرهای GPU و VRM در خود PacePilot خوانده می‌شوند؛ حسگرهای پشتیبانی‌نشده با — نمایش داده می‌شوند.",
                 x,1156,w,49,10,false,theme.Secondary);
@@ -1361,7 +1365,7 @@ namespace PacePilot
                     Size=size;PerformLayout();Application.DoEvents();FitCanvas();
                     if(shell.GetControlFromPosition(0,0).Right>viewport.Left)throw new Exception("Overlap: "+t.Id);
                     if(canvas.Controls.Count<4||fpsBox==null||targetBox==null||graph==null)throw new Exception("Missing core controls: "+t.Id);
-                    if(activity==null||dashboardHardware.Count!=7||ramReadyValue==null||frameFeedStatus==null)
+                    if(activity==null||dashboardHardware.Count!=8||ramReadyValue==null||frameFeedStatus==null)
                         throw new Exception("Missing RAM readiness, hardware, or RTSS activity widgets: "+t.Id);
                     if(apply.Right>apply.Parent.Width||disable.Right>disable.Parent.Width||fpsBox.Right>fpsBox.Parent.Width)throw new Exception("Clipped FPS controls: "+t.Id);
                 }
