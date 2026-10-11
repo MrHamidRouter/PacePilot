@@ -103,3 +103,12 @@ PacePilot now derives its installed version from the executing EXE assembly; the
 Adds real CPU package temperature to the main hardware row alongside CPU usage, GPU, VRAM, RAM, GPU power, GPU temperature, GPU VRM temperature and motherboard VRM temperature. The nine cards wrap responsively on narrower viewports. Internal LibreHardwareMonitor sensor names now recognize more voltage-regulator aliases and provide a read-only listing of actual temperature sensors discovered on the device when a VRM reading is missing. A GPU/motherboard without an exposed VRM sensor will continue to show —; no estimate or fabricated value is ever displayed.
 
 All existing six skins, RTSS controls, OSD, installed game discovery and RAM readiness remain intact.
+
+
+## v2.6.0 — Hardware identity subtitles and manual VRM Sensor Mapping
+
+The WinForms dashboard resolves CPU, GPU, motherboard and RAM module identity **once in a background worker** via built-in Windows WMI and displays names under the nine live hardware metric cards (full values on hover). Existing real hardware readings continue using the bundled LibreHardwareMonitorLib provider, with no third-party monitoring app to launch.
+
+Under **Appearance & Settings → Sensor Mapping / VRM → Map VRM Sensors**, choose a real temperature channel by its LibreHardwareMonitor sensor identifier. The GPU VRM selector is limited to GPU-root sensors, and the motherboard selector to Motherboard-root sensors (including nested Super I/O children). Current values and full sensor paths are shown. Assignments persist to `%APPDATA%\PacePilot\settings.xml`. Automatic mode keeps the previous alias-based detection.
+
+**No invented thermals:** an ambiguous Temperature #3 must be independently verified before mapping as VRM; missing/null saved sensor IDs display N/A, never a previous stale sample. The mapping layer reuses the existing asynchronous BuiltInSensors poller rather than opening competing hardware monitors. The implementation targets the existing .NET Framework WinForms build, not a forced .NET 8 migration.
