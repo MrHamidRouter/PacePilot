@@ -1,151 +1,78 @@
-# PacePilot Studio 2.2 | نرم‌افزار کنترل فریم ویندوز
+# PacePilot Studio
 
-### Performance HUD / پایش و نمایش روی بازی (v2.2)
+**Precision frame-rate control and live hardware telemetry for Windows 10/11 x64**
 
-**One app • six artwork themes • RTSS FPS controls • in-game OSD • CPU/RAM/GPU cards**
+[![Windows build](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml/badge.svg)](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml)
+[![Latest release](https://img.shields.io/github/v/release/MrHamidRouter/PacePilot?display_name=tag)](https://github.com/MrHamidRouter/PacePilot/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE.txt)
 
-Inside **Performance HUD / پایش و نمایش بازی**, use **Alt + Shift + O** to show or hide PacePilot's native RTSS OSD. FPS and the 20-block frametime bar use real RTSS measurements. CPU and RAM are read using native Windows counters. For GPU load, GPU temperature, core clock, board power, VRAM and motherboard VRM temperatures, enable **Shared Memory Support** under HWiNFO64 Sensors; unsupported readings remain **—**, never fabricated. Overlay visibility depends on RTSS/game compatibility.
+**Developer:** Mr.HamidRouter  
+**Current version:** 2.6.1  
+**Language:** C# · **Desktop UI:** native WinForms + GDI+  
+**Required external gaming component:** RivaTuner Statistics Server (RTSS) for FPS limiting and the in-game overlay.
 
-Anti-cheat checks now depend on the selected game executable instead of merely the existence of unrelated background anti-cheat services. **PUBG/BattlEye, Valorant and other protected games remain blocked:** PacePilot does not bypass game anti-cheat policies, and an in-game limiter is recommended for such titles.
+[**Download for Windows (.zip)**](https://github.com/MrHamidRouter/PacePilot/releases/latest/download/PacePilot-Windows-x64.zip) ·
+[**Published SHA-256 checksum**](https://github.com/MrHamidRouter/PacePilot/releases/latest/download/PacePilot-Windows-x64.zip.sha256) ·
+[**Release history**](https://github.com/MrHamidRouter/PacePilot/releases) ·
+[**Build & security transparency**](Docs/SECURITY_AND_RELEASE.md)
 
-این نسخه شامل کارت‌های جداگانه CPU، RAM، GPU، دما، کلاک، توان، VRAM و VRM است؛ داده‌های گرافیکی از HWiNFO64 (در صورت فعال بودن Shared Memory Support) خوانده می‌شوند. برای روشن و خاموش‌کردن OSD از **Alt + Shift + O** استفاده کنید. محدودیت ضدتقلبِ بازی‌های محافظت‌شده همچنان رعایت می‌شود و بازبودن سرویس یک بازی دیگر به‌تنهایی سایر بازی‌ها را مسدود نمی‌کند.
+---
 
-Windows CI checks compilation and UI self-tests, not real in-game frame limiting; on-machine validation remains necessary.
+## What PacePilot does / امکانات برنامه
 
-### Windows Administrator / اجرای مدیر (v2.1.1)
-
-`PacePilot.exe` now requests **Administrator** via a standard Windows manifest. UAC confirmation is required; FPS updates are verified against RTSS and its saved profile before showing success. Running with Administrator cannot guarantee a silent startup without consent.
-
-نسخه ۲.۱.۱ هنگام اجرای فایل EXE درخواست مجوز Administrator می‌دهد. خطای بررسی زودهنگام حافظه RTSS اصلاح شده است؛ پس از ذخیره، مقدار FPS از فایل پروفایل و API بازخوانی می‌شود. اجرای خودکار بی‌صدا با دسترسی مدیر تضمین نمی‌شود و برنامه UAC را دور نمی‌زند.
-
-
-**[Website / سایت پروژه](https://mrhamidrouter.github.io/PacePilot/)** · **[Windows ZIP / دریافت ویندوز](https://github.com/MrHamidRouter/PacePilot/releases/latest/download/PacePilot-Windows-x64.zip)** · **[All releases / نسخه‌ها](https://github.com/MrHamidRouter/PacePilot/releases)**
-
-**Developer / توسعه‌دهنده: Mr.HamidRouter** · **Windows 10/11 x64** · **English / فارسی** · **MIT License**
-
-PacePilot is an independent Windows FPS-limiter front end powered by **RivaTuner Statistics Server (RTSS)**. It offers **six selectable artwork themes**, per-game/global FPS caps, RTSS live telemetry, a measured frametime graph, persistent game profiles, global hotkeys, tray controls, and assisted RTSS installation.
-
-PacePilot یک نرم‌افزار مستقل ویندوز برای کنترل FPS با استفاده از RTSS است. **شش پوسته گرافیکی با پس‌زمینه اختصاصی**، تنظیم محدودیت فریم برای هر بازی، نمودار زنده مبتنی بر اندازه‌گیری RTSS، پروفایل‌های ذخیره‌شده، میانبرهای سراسری، اجرای کنار ساعت و نصب هدایت‌شده RTSS دارد.
-
-## Download / دریافت نسخه اجرایی
-
-**One ZIP, no compiling. / فقط یک ZIP، بدون کامپایل**
-
-Get the `PacePilot-Windows-x64.zip` file from a successful [Windows build](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml). Extract it; run `PacePilot.exe` directly if RTSS is installed. Otherwise, run **`Setup-PacePilot.bat` once**. It checks RTSS, installs it via `winget` only when missing, and launches the EXE. Windows may request administrator confirmation.
-
-فایل `PacePilot-Windows-x64.zip` را از [ساخت ویندوزی GitHub](https://github.com/MrHamidRouter/PacePilot/actions/workflows/windows-build.yml) دریافت و استخراج کنید. اگر RTSS از قبل نصب است، `PacePilot.exe` را اجرا کنید؛ در غیر این صورت فقط **`Setup-PacePilot.bat`** را اجرا کنید تا RTSS بررسی و در صورت نیاز از طریق winget نصب شود و برنامه اجرا شود. ممکن است تأیید دسترسی مدیر ویندوز لازم باشد.
-
-The ZIP includes an EXE, one optional setup BAT and two language-specific READMEs; RTSS is downloaded from its package source and is **not** redistributed. Developer: **Mr.HamidRouter**.
-
-## Six fully functional themes / شش طرح قابل‌استفاده
-
-| Theme / طرح | Interface layout / چیدمان |
+| Feature | Description |
 | --- | --- |
-| Neon Teal / فیروزه‌ای | Wide game selector, main limit & statistics, full-width graph |
-| Windows Blue / سفید آبی | Spacious stacked Windows 11-inspired dashboard |
-| Cyber Purple / بنفش | Dedicated game column, FPS area and telemetry cards |
-| Racing Red / قرمز مسابقه‌ای | Hero banner, performance grid and chart |
-| Esports Lime / سبز گیمینگ | Competitive layout with side-by-side configuration |
-| Graphite Gold / مشکی طلایی | Two-column step-by-step controls and telemetry |
+| Frame limiter | RTSS-backed global and per-game FPS caps with verification |
+| Frame-time & OSD | Real RTSS frame samples, frame-time trend and Alt+Shift+O overlay toggle; shows N/A without a game hook |
+| Games & profiles | Scan supported installed games, assign and save profile limits |
+| Hardware telemetry | CPU, GPU, RAM, VRAM, available temperatures and graphics power via bundled LibreHardwareMonitorLib and Windows counters |
+| Manual VRM mapping | Select actual published GPU/board sensor IDs; missing channels are never fabricated |
+| Hardware identity | CPU/GPU/motherboard/RAM names appear under dashboard cards |
+| Visual themes | Six native custom-drawn color systems; theme artwork concepts are **design references**, not screenshots |
+| Pre-game RAM check | Inspect RAM usage and optionally trim only PacePilot's own memory |
+| Software updates | Compare against official GitHub Releases |
 
-Choose a theme and switch between **English** and **فارسی** from the left sidebar. Both selections are saved in `%APPDATA%\PacePilot\settings.xml` and restored on the next launch. All six skins use the **same real FPS/RTSS backend** and the same stored profiles. / زبان و طرح برنامه از پنل کناری قابل تغییر و ذخیره هستند.
+**فارسی:** PacePilot برای محدودسازی فریم بازی با موتور RTSS، نمایش نمودار واقعی Frame Time، پایش دما و مصرف CPU/GPU/RAM/VRAM، اسکن بازی‌ها، انتخاب دستی سنسور VRM و شش تم گرافیکی ساخته شده است. دمای VRM فقط وقتی نمایش داده می‌شود که سنسور واقعی آن وجود داشته و قابل خواندن باشد.
 
-### UI preview gallery / پیش‌نمایش شش طرح
+## Safe installation / نصب و اجرای مطمئن
 
-| Neon Teal | Windows Blue | Cyber Purple |
-| --- | --- | --- |
-| ![Neon Teal](Docs/Previews/01-Neon-Teal.jpg) | ![Windows Blue](Docs/Previews/02-Windows-Blue.jpg) | ![Cyber Purple](Docs/Previews/03-Cyber-Purple.jpg) |
+1. Get the official **ZIP** and **.sha256** file from the same [GitHub Release](https://github.com/MrHamidRouter/PacePilot/releases/latest).
+2. **Verify the ZIP checksum** using the PowerShell command below *before* extracting or running anything.
+3. Extract the **entire ZIP** to a normal folder; keep DLLs next to `PacePilot.exe`.
+4. If RTSS is installed, run `PacePilot.exe`. Otherwise run `Setup-PacePilot.bat` and explicitly approve the RTSS package installation. A UAC prompt is expected for the current elevated EXE.
 
-| Racing Red | Esports Lime | Graphite Gold |
-| --- | --- | --- |
-| ![Racing Red](Docs/Previews/04-Racing-Red.jpg) | ![Esports Lime](Docs/Previews/05-Esports-Lime.jpg) | ![Graphite Gold](Docs/Previews/06-Graphite-Gold.jpg) |
+```powershell
+$actual = (Get-FileHash ".\PacePilot-Windows-x64.zip" -Algorithm SHA256).Hash.ToLowerInvariant()
+$expected = ((Get-Content ".\PacePilot-Windows-x64.zip.sha256" -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
+if ($actual -ne $expected) { throw "Checksum mismatch: do NOT execute this file." }
+"Integrity verified: $actual"
+```
 
-These concept screenshots guided the six **functional** WinForms layouts; actual UI controls may differ in small details. / این تصاویر نمونه طراحی هستند و ظاهر برخی کنترل‌های واقعی ویندوز ممکن است کمی متفاوت باشد.
+The ZIP contains `INTEGRITY_MANIFEST.json` with SHA-256 hashes of the EXE and DLLs, source commit ID and signing status. The GitHub CI build also creates verifiable **build provenance attestations**. See the [detailed security guide](Docs/SECURITY_AND_RELEASE.md).
 
-## Main features / امکانات
+### Publisher trust: an important limitation
 
-- **FPS caps / محدودکننده فریم:** 30, 40, 60, 90, 120, 144, 165, 240 and custom 0–1000 FPS, 0 = unlimited.
-- **Global/per-game profiles / پروفایل اختصاصی هر بازی:** select a game executable or browse visible running processes; remember game-specific FPS values.
-- **Measured monitoring / پایش واقعی:** RTSS shared-memory FPS/frametime samples. Missing telemetry shows `--`, not invented readings.
-- **Runtime changes / تغییر حین بازی:** apply a new FPS setting via RTSS without reopening PacePilot. A particular game may still restrict external hooks.
-- **Hotkeys / میانبرها:** `Alt + Shift + L` toggle; `Alt + Shift + Up/Down` adjust FPS by 1.
-- **Tray & startup / کنار ساعت و استارت‌آپ:** minimize to tray, launch on Windows startup, always on top.
-- **Anti-cheat precautions / هشدار ضدتقلب:** blocks known protected processes and warns before global changes. Detection cannot guarantee compatibility.
-- **RTSS management / مدیریت RTSS:** search for an existing installation, offer consent-based `winget` installation of `Guru3D.RTSS`, manual folder selection, official download fallback, diagnostics.
-- **Tests / تست:** self-test for theme layouts, responsive layout, presets, language switching and RTSS configuration parser. CI on Windows compiles the project and runs the test. Real-world gameplay and RTSS interaction require a Windows PC.
+**The portable executable is unsigned unless the publisher configures a publicly trusted Authenticode certificate in the release pipeline.** It may consequently trigger **Unknown Publisher** or Microsoft Defender SmartScreen. **The size of a compressed WinForms ZIP (even under 1 MB) does not establish whether it is malicious or safe.** Checksums and public source increase auditability but do not prove that a program is malware-free. Never disable Windows security protections just to execute it.
 
-## RTSS setup / نصب RTSS
+**فارسی:** حجم کم فایل ZIP طبیعی است و به‌تنهایی نشانه ویروس یا سالم‌بودن نیست. برای بررسی اصالت، فایل `.sha256` رسمی را با هش فایل ZIP مقایسه کنید. نسخه فاقد امضای معتبر ممکن است هشدار SmartScreen بدهد؛ غیرفعال‌کردن آنتی‌ویروس یا SmartScreen توصیه نمی‌شود.
 
-If RTSS is missing, PacePilot asks before doing anything. If the user approves, Windows Package Manager runs `winget install --id Guru3D.RTSS --exact --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity` with a Windows UAC prompt when necessary. `winget` verifies its installer package according to its manifest. If installation fails or is refused, [Guru3D's RTSS download page](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/) is offered. RTSS binaries are **not** redistributed with PacePilot.
+## Runtime design
 
-در نبود RTSS، برنامه ابتدا اجازه می‌گیرد؛ پس از تأیید کاربر با `winget` تلاش به نصب می‌کند. در صورت شکست، مسیر دانلود رسمی معرفی می‌شود. هیچ فایل اجرایی RTSS در بسته بازنشر نمی‌شود.
+```text
+PacePilot Studio (C# WinForms / six native themes)
+  ├── Game discovery, per-game profiles and RAM readiness
+  ├── RTSS: FPS limiter, on-screen overlay and real frame timing
+  ├── Built-in LibreHardwareMonitorLib + Windows GPU/WMI telemetry
+  ├── Hardware inventory and optional explicit VRM sensor mapping
+  └── GitHub Releases updater + local integrity information
+```
 
-## Build locally / ساخت از سورس
+The application is **not affiliated** with RTSS, Guru3D, MSI Afterburner, FramePacer or graphics manufacturers. Protected games can restrict external overlays and monitoring hooks. It does **not** bypass anti-cheat or implement NVIDIA Reflex, DLSS Frame Generation, proprietary injection engines or guaranteed reduction in latency.
 
-Double-click `Start-PacePilot.cmd` on Windows 10/11 x64. The script finds Microsoft's .NET Framework C# compiler, builds a uniquely named EXE to avoid file-locking, executes `--selftest`, and launches the verified build. Files in `Docs/` are optional helpers; users need only the single launcher. The workflow produces `Bin/PacePilot.exe` for the Actions artifact.
+## Development & tests
 
-روی ویندوز ۱۰/۱۱ نسخه ۶۴ بیتی، فایل `Start-PacePilot.cmd` را اجرا کنید. این فایل ساخت برنامه و تست را یکجا انجام می‌دهد. نیازی به اجرای چند فایل CMD نیست.
+The Windows Actions job compiles the real application, runs the bilingual UI and logic self-test, creates a distributable ZIP, records SHA-256 digests and publishes a source-linked artifact attestation. These automated checks **do not establish** hardware sensor compatibility, per-game RTSS hooking or security scan results on every machine.
 
-## Scope and limitations / محدودیت‌ها
+**Licensing:** MIT for original PacePilot source. Bundled hardware sensor dependencies retain their own licenses; see `Docs/THIRD_PARTY_NOTICES.md` and the package license files.
 
-PacePilot is **not a reimplementation of the proprietary FramePacer engine** and is not affiliated with FramePacer, pacerio, RTSS or Guru3D. The app relies on separately installed RTSS for actual FPS limiting and monitoring. **NVIDIA Reflex, DLSS Frame Generation / Dynamic MFG, ReShade injection, controller-driven navigation, proprietary multi-API injection and Microsoft Store protected-game interoperability are not implemented.** Do not interpret the UI mockups as evidence of these features. Smoothness depends on the game's engine, RTSS compatibility, and your hardware. An FPS cap cannot eliminate all stuttering.
-
-PacePilot موتور اختصاصی FramePacer را کپی نمی‌کند. قابلیت‌های Reflex و DLSS Frame Generation و موارد وابسته به موتور اختصاصی **پیاده‌سازی نشده‌اند**. ادعای حذف کامل لگ یا سازگاری با همه بازی‌های آنلاین وجود ندارد. در بازی‌های دارای ضدتقلب از محدودکننده خارجی بدون بررسی قوانین بازی استفاده نکنید.
-
-## License
-
-PacePilot source: MIT. Third-party RTSS: separately licensed by its publisher. Theme concept mockups are visual previews, not executable interfaces.
-
-## PacePilot Studio 2.1 / نسخه ۲.۱
-
-- Embedded artwork from the six approved theme concepts / پس‌زمینه تصویری شش پوسته در فایل EXE.
-- Local Steam, Epic Games and GOG game detection / شناسایی بازی‌های نصب‌شده.
-- Official GitHub Releases update notifications / بررسی نسخه جدید گیت‌هاب.
-- RTSS protected-profile UAC-assisted save, with explicit consent / رفع خطای دسترسی پروفایل RTSS با مجوز محدود.
-- Download one ready-to-use ZIP from [Releases](https://github.com/MrHamidRouter/PacePilot/releases).
-
-**Developer: Mr.HamidRouter**
-
-## PacePilot 2.3 — Premium themes, live frame activity, and RAM readiness
-
-The **existing RTSS limiter, OSD hotkey, game library, saved profiles, and update checks remain in one executable.** The main dashboard now follows the same consistent layout in all **six embedded-artwork themes**; cards, borders and banner accents change to match each theme. These are native Windows controls built from the concepts, **not rasterized screenshots or a promise of pixel-perfect mockup reproduction**.
-
-### Real frametime feed
-The animated **Frame Activity** strip and **Frame-Time History** graph are driven by the same actual RTSS per-game frame samples. **FPS limit applied** and **RTSS process running** do not establish that a game-render hook is active. When no valid target-game samples arrive, the graph stays empty and an explicit **Awaiting RTSS game hook** message is shown instead of fabricated motion. Avoid selecting helper executables such as `UnrealCEFSubProcess.exe`; select the real game process. Protected games may not support injected RTSS OSD.
-
-### Safe pre-game memory check
-Select **Prepare / Inspect** in the **Pre-game RAM readiness** panel to view physical RAM and optionally trim **PacePilot's own** working set. **Heavy apps** lists visible user applications using significant memory, without force-closing anything. Launch games using your normal Steam/Epic shortcut after the check. PacePilot **does not** flush Windows standby memory, change memory quotas, kill background services, or promise FPS improvements. This button is optional and does not run at Windows startup.
-
-GPU / VRM telemetry still depends on available HWiNFO64 shared-memory sensors. Missing measurements show **—**.
-
-
-## نسخه ۲.۳ — شش پوسته، نمودار فریم واقعی و آمادگی رم
-
-موتور کنترل FPS قبلی، کتابخانه بازی‌ها، OSD با میانبر `Alt + Shift + O`، پروفایل‌ها و بررسی آپدیت **در همان فایل اجرایی حفظ شده‌اند**. صفحه اصلی اکنون برای هر شش پوسته ساختار هماهنگی دارد و از تصاویر تعبیه‌شده، رنگ‌بندی اختصاصی و کارت‌های گرافیکی استفاده می‌کند. این رابط کنترل‌های قابل‌استفاده ویندوز است و **تصاویر طراحی‌شده صرفاً مرجع بصری‌اند؛ انطباق پیکسلی تضمین نمی‌شود**.
-
-### نوار فعالیت Frame Time
-نوار فعالیت و نمودار فقط از **نمونه‌های واقعی RTSS** به‌روزرسانی می‌شوند. نصب و اجرای RTSS یا ذخیره محدودیت FPS به‌معنای دریافت خودکار اطلاعات فریم بازی نیست. اگر بازیِ انتخاب‌شده اتصال Render Hook نداشته باشد، به‌جای نمایش داده ساختگی، پیام «در انتظار اتصال RTSS به بازی» دیده می‌شود. فایل‌های کمکی مانند `UnrealCEFSubProcess.exe` را به‌عنوان فایل اصلی بازی انتخاب نکنید. نمایش OSD روی بازی‌های دارای ضدتقلب تضمین نمی‌شود.
-
-### بررسی رم قبل از بازی
-با دکمه **بررسی و آماده‌سازی** می‌توان حافظه فیزیکی را ارزیابی کرد و حافظه کاری **خود PacePilot** را (اختیاری و به درخواست کاربر) کاهش داد. گزینه **برنامه‌های پرمصرف** موارد سنگینِ قابل‌مشاهده را معرفی می‌کند. هیچ برنامه‌ای به‌زور بسته نمی‌شود؛ کش/Standby ویندوز دستکاری نمی‌شود و افزایش FPS تضمین نیست. پس از بررسی، بازی را از طریق Steam یا میانبر عادی اجرا کنید.
-
-اطلاعات GPU و VRM از حسگرهای واقعی HWiNFO64، در صورت موجود بودن، گرفته می‌شود؛ داده ناموجود با «—» نمایش داده می‌شود.
-
-
-## v2.4 — Native premium UI rendering (no screenshot wallpaper)
-
-PacePilot no longer stretches or crops the design mockup screenshots behind its Windows controls. The six selectable looks — Neon Teal, Windows Blue, Cyber Purple, Racing Red, Esports Lime and Graphite Gold — are now drawn with native scalable gradients, themed sidebars, rounded metric tiles, and a vector hero. The theme gallery previews actual visual primitives rather than thumbnails of concept screenshots. The real RTSS frame-time graph includes a measured-only fill and an explicit **Waiting for verified RTSS frame data** state when there are no rendering samples. FPS controls, game scanning, OSD hotkey, hardware sensors, safe pre-game RAM check and update detection remain in the same EXE.
-
-**Scope:** This is a practical native visual redesign, not a 1:1 raster recreation of the original concept images. Windows CI verifies build/UI controls; live gameplay and display quality still need on-device checks.
-
-## PacePilot 2.5 — Internal hardware monitoring, only RTSS remains external
-
-The **hardware sensor engine is bundled inside the PacePilot ZIP**: the executable and managed hardware-monitoring DLLs are shipped together. Users **do not install or run** HWiNFO64, MSI Afterburner, LibreHardwareMonitor, or any sensor service. PacePilot directly enumerates CPU, GPU and motherboard sensors via the bundled [LibreHardwareMonitorLib 0.9.4](https://www.nuget.org/packages/LibreHardwareMonitorLib/0.9.4) component, polled asynchronously without blocking the UI. Native Windows GPU utilization/memory counters are available as a fallback. Sensor engine status and missing-sensor diagnostics are available by clicking a GPU/VRM tile. 
-
-**RTSS is still the only separate third-party application necessary** for FPS limiting and in-game OSD. The six themes, game scanner, frame graph, FPS profiles, OSD keyboard toggle and safe RAM readiness stay unchanged. The ZIP includes DLL dependencies and MPL-2.0 license, so keep the extracted files together (do not move only `PacePilot.exe`). Windows/driver protections and missing physical VRM sensors may still prevent certain readings; never disable security features or invent values.
-
-## نسخه ۲.۵ — پایش سخت‌افزار داخلی، بدون نرم‌افزار جانبی
-
-موتور خواندن حسگرها اکنون **داخل بسته خود PacePilot** قرار گرفته است. برای نمایش CPU/GPU، دما، کلاک، توان، VRAM و VRM **نصب یا اجرای HWiNFO، MSI Afterburner یا LibreHardwareMonitor ضروری نیست**. کتابخانه [LibreHardwareMonitorLib](https://www.nuget.org/packages/LibreHardwareMonitorLib/0.9.4) با DLLهای لازم در ZIP قرار دارد و خود PacePilot داده‌ها را به‌صورت پس‌زمینه و بدون توقف رابط دریافت می‌کند. شمارنده‌های GPU ویندوز نیز برای مقادیر پشتیبانی‌شده نقش جایگزین دارند. روی کارت خالی GPU/VRM کلیک کنید تا وضعیت حسگر داخلی مشخص شود.
-
-**RTSS تنها برنامه خارجی موردنیاز برای محدودسازی FPS و OSD داخل بازی است.** تمام شش تم، اسکن بازی‌ها، نمودارها، پروفایل‌ها و تنظیمات قبلی حفظ شده‌اند. ZIP را کامل استخراج کنید و فایل‌های DLL را کنار `PacePilot.exe` نگه دارید؛ نیازی به نصب‌کردن این کتابخانه‌ها نیست. دمای VRM یا بعضی دماها ممکن است در سخت‌افزار وجود نداشته باشد یا دسترسی درایور به‌دلیل سیاست امنیتی ویندوز مسدود شود. هیچ داده غیرواقعی نمایش داده نمی‌شود.
+**Further reading:** [English / فارسی release guidance](Docs/SECURITY_AND_RELEASE.md) · [Development archive](Docs/RELEASE_HISTORY.md) · [PacePilot website](https://mrhamidrouter.github.io/PacePilot/)
