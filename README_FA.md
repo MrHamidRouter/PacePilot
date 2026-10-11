@@ -96,3 +96,9 @@ winget install --id Guru3D.RTSS --exact --source winget --silent --accept-packag
 برای بررسی: **HWiNFO64 → Sensors-only → Main Settings → Shared Memory Support**؛ در صورت نبود این منبع، LibreHardwareMonitor را با حسگرهای فعال اجرا کنید. این تغییرها افزایش FPS را تضمین نمی‌کنند.
 
 **منبع سوم سنسورها — MSI Afterburner:** اگر MSI Afterburner روی سیستم اجرا باشد، PacePilot مقادیر منتشرشده GPU در `MAHMSharedMemory` را هم به‌صورت مستقیم و فقط خواندنی بررسی می‌کند. در Afterburner قسمت **Settings → Monitoring**، گزینه‌های GPU temperature، GPU usage، Memory usage، Core clock و GPU power را در لیست گراف‌های فعال انتخاب کنید. RTSS به‌تنهایی دمای GPU یا VRM را تولید نمی‌کند. سنسور VRM تنها در صورتی نمایش داده می‌شود که سخت‌افزار و نرم‌افزار مانیتورینگ واقعاً آن را ارائه کنند.
+
+## نسخه ۲.۵ — پایش سخت‌افزار داخلی، بدون نرم‌افزار جانبی
+
+موتور خواندن حسگرها اکنون **داخل بسته خود PacePilot** قرار گرفته است. برای نمایش CPU/GPU، دما، کلاک، توان، VRAM و VRM **نصب یا اجرای HWiNFO، MSI Afterburner یا LibreHardwareMonitor ضروری نیست**. کتابخانه [LibreHardwareMonitorLib](https://www.nuget.org/packages/LibreHardwareMonitorLib/0.9.4) با DLLهای لازم در ZIP قرار دارد و خود PacePilot داده‌ها را به‌صورت پس‌زمینه و بدون توقف رابط دریافت می‌کند. شمارنده‌های GPU ویندوز نیز برای مقادیر پشتیبانی‌شده نقش جایگزین دارند. روی کارت خالی GPU/VRM کلیک کنید تا وضعیت حسگر داخلی مشخص شود.
+
+**RTSS تنها برنامه خارجی موردنیاز برای محدودسازی FPS و OSD داخل بازی است.** تمام شش تم، اسکن بازی‌ها، نمودارها، پروفایل‌ها و تنظیمات قبلی حفظ شده‌اند. ZIP را کامل استخراج کنید و فایل‌های DLL را کنار `PacePilot.exe` نگه دارید؛ نیازی به نصب‌کردن این کتابخانه‌ها نیست. دمای VRM یا بعضی دماها ممکن است در سخت‌افزار وجود نداشته باشد یا دسترسی درایور به‌دلیل سیاست امنیتی ویندوز مسدود شود. هیچ داده غیرواقعی نمایش داده نمی‌شود.
