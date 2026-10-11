@@ -1262,6 +1262,8 @@ namespace PacePilot
                     Size=size;PerformLayout();Application.DoEvents();FitCanvas();
                     if(shell.GetControlFromPosition(0,0).Right>viewport.Left)throw new Exception("Overlap: "+t.Id);
                     if(canvas.Controls.Count<4||fpsBox==null||targetBox==null||graph==null)throw new Exception("Missing core controls: "+t.Id);
+                    if(activity==null||dashboardHardware.Count!=7||ramReadyValue==null||frameFeedStatus==null)
+                        throw new Exception("Missing RAM readiness, hardware, or RTSS activity widgets: "+t.Id);
                     if(apply.Right>apply.Parent.Width||disable.Right>disable.Parent.Width||fpsBox.Right>fpsBox.Parent.Width)throw new Exception("Clipped FPS controls: "+t.Id);
                 }
                 fpsBox.Value=144;
