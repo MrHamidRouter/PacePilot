@@ -307,6 +307,9 @@ namespace PacePilot
         FrameActivityBar activity;
         Label frameFeedStatus,ramReadyValue;
         readonly Dictionary<string,Label> dashboardHardware=new Dictionary<string,Label>();
+        readonly Dictionary<string,Label> hardwareCaptions=new Dictionary<string,Label>();
+        readonly ToolTip hardwareTooltips=new ToolTip();
+        HardwareInventory hardwareInventory=new HardwareInventory();
         List<Button> presets = new List<Button>();
         readonly List<Control> pageControls=new List<Control>();
         NotifyIcon tray;
@@ -333,10 +336,32 @@ namespace PacePilot
                 InitializeRtss(); InitTray();
                 timer=new System.Windows.Forms.Timer(); timer.Interval=500; timer.Tick+=(s,e)=>UpdateLive(); timer.Start();
                 SetStartup(false);
+                // Inventory is queried only once on a background worker, never on the UI timer.
+                Load+=(s,e)=>BeginLoadHardwareInventory();
                 Shown+=(s,e)=>BeginInvoke(new System.Action(()=>{AskInstall();ScanInstalledGames(false);CheckUpdates(false);}));
             }
             TopMost=settings.AlwaysOnTop;
             if(startInTray && !testing) { WindowState=FormWindowState.Minimized; ShowInTaskbar=false; }
+        }
+        void BeginLoadHardwareInventory()
+        {
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate(object unused)
+            {
+                HardwareInventory loaded;
+                try { loaded=HardwareInventoryService.Read(); }
+                catch { loaded=new HardwareInventory(); }
+                try
+                {
+                    if(!IsDisposed && IsHandleCreated)
+                        BeginInvoke(new System.Action(delegate
+                        {
+                            if(IsDisposed)return;
+                            hardwareInventory=loaded;
+                            UpdateHardwareCaptions();
+                        }));
+                }
+                catch(InvalidOperationException){}
+            });
         }
         void Persist()
         {
@@ -439,7 +464,7 @@ namespace PacePilot
         void DrawPage()
         {
             if(canvas==null)return;
-            dashboardHardware.Clear();activity=null;frameFeedStatus=null;ramReadyValue=null;
+            dashboardHardware.Clear();hardwareCaptions.Clear();activity=null;frameFeedStatus=null;ramReadyValue=null;
             canvas.SuspendLayout();
             while(canvas.Controls.Count>0){Control removed=canvas.Controls[0];canvas.Controls.Remove(removed);removed.Dispose();}
             presets.Clear();
@@ -500,7 +525,7 @@ namespace PacePilot
             top+=124;
             int sensorColumns=w<620?3:(w<1140?5:9);
             int sensorRows=(9+sensorColumns-1)/sensorColumns;
-            int sensorHeight=54+sensorRows*80;
+            int sensorHeight=54+sensorRows*99;
             MakeHardwareStrip(x,top,w,sensorHeight);
             top+=sensorHeight+12;
             MakeOptions(x,top,w,160);
@@ -532,10 +557,13 @@ namespace PacePilot
             for(int i=0;i<keys.Length;i++)
             {
                 int x0=padding+(i%columns)*(tileW+gap);
-                int y0=44+(i/columns)*80;
-                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,y0,tileW,75);card.Controls.Add(panel);
-                Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,24,8,false,theme.Secondary);
-                Label value=TextAt(panel,"—","—",7,31,tileW-12,36,tileW<98?10:13,true,theme.Accent);
+                int y0=44+(i/columns)*99;
+                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,y0,tileW,94);card.Controls.Add(panel);
+                Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,23,8,false,theme.Secondary);
+                Label value=TextAt(panel,"—","—",7,28,tileW-12,34,tileW<98?10:13,true,theme.Accent);
+                Label caption=TextAt(panel,"Identifying hardware…","در حال شناسایی قطعه…",7,63,tileW-12,23,7,false,theme.Secondary);
+                hardwareCaptions[keys[i]]=caption;
+                hardwareTooltips.SetToolTip(panel,caption.Text);
                 if(keys[i]!="CPU"&&keys[i]!="RAM")
                 {
                     panel.Cursor=Cursors.Help;
@@ -547,6 +575,39 @@ namespace PacePilot
                 dashboardHardware[keys[i]]=value;
             }
             UpdateHardwareStrip();
+            UpdateHardwareCaptions();
+        }
+        void UpdateHardwareCaptions()
+        {
+            string cpu=hardwareInventory.CpuName;
+            string gpu=hardwareInventory.GpuName;
+            string board=hardwareInventory.MotherboardName;
+            string ram=hardwareInventory.RamSummary;
+            foreach(KeyValuePair<string,Label> entry in hardwareCaptions)
+            {
+                Label caption=entry.Value;
+                if(caption==null||caption.IsDisposed)continue;
+                string identity=(entry.Key=="CPU"||entry.Key=="CTEMP")?cpu:
+                    (entry.Key=="RAM")?ram:(entry.Key=="VRM")?board:gpu;
+                caption.Text=identity;
+                hardwareTooltips.SetToolTip(caption,entry.Key=="RAM" && 
+                    !String.IsNullOrWhiteSpace(hardwareInventory.RamModules)?
+                    hardwareInventory.RamModules:identity);
+                if(caption.Parent!=null)
+                    hardwareTooltips.SetToolTip(caption.Parent,identity);
+            }
+        }
+        void OpenSensorMapping()
+        {
+            using(SensorMappingForm window=new SensorMappingForm(settings,Fa))
+            {
+                if(window.ShowDialog(this)!=DialogResult.OK)return;
+                settings.GpuVrmSensorId=window.SelectedGpuId;
+                settings.BoardVrmSensorId=window.SelectedBoardId;
+                Persist();
+                UpdateLive();
+                DrawPage();
+            }
         }
         void ShowSensorHelp()
         {
@@ -557,7 +618,11 @@ namespace PacePilot
                 BuiltInSensors.TemperatureSensorReport+"\n\n"+
                 L("PacePilot collects sensors by itself. No HWiNFO, MSI Afterburner or LibreHardwareMonitor installation or running process is required. If a sensor is blank, the device may not expose it, or Windows may block the sensor driver. Restart PacePilot as Administrator if needed; never disable Windows security features to force sensor access. VRM temperature is only available on compatible boards.",
                   "PacePilot خودش اطلاعات حسگرها را می‌خواند و نصب یا اجرای HWiNFO، MSI Afterburner یا LibreHardwareMonitor لازم نیست. اگر سنسوری خالی باشد، ممکن است سخت‌افزار آن را ارائه نکند یا ویندوز دسترسی به درایور حسگر را محدود کرده باشد. در صورت نیاز برنامه را با Administrator اجرا کنید؛ برای دسترسی سنسورها امنیت ویندوز را خاموش نکنید. دمای VRM تنها روی مادربردهای سازگار در دسترس است.");
-            MessageBox.Show(this,info,L("Hardware sensor diagnostics","عیب‌یابی سنسورهای سخت‌افزار"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+            DialogResult choice=MessageBox.Show(this,info+"\n\n"+
+                L("Open manual VRM Sensor Mapping now?","تنظیمات انتخاب دستی حسگر VRM باز شود؟"),
+                L("Hardware sensor diagnostics","عیب‌یابی سنسورهای سخت‌افزار"),
+                MessageBoxButtons.YesNo,MessageBoxIcon.Information);
+            if(choice==DialogResult.Yes)OpenSensorMapping();
         }
         void UpdateHardwareStrip()
         {
@@ -856,6 +921,7 @@ namespace PacePilot
             // Self-contained GPU/CPU/VRM engine. No separate monitoring applications.
             BuiltInSensors.Enrich(ref lastSystem);
             HardwareFallback.Enrich(ref lastSystem);
+            HardwareSensorService.ApplyMappings(ref lastSystem,settings);
             if(cpuTempMonitor!=null&&!cpuTempMonitor.IsDisposed)cpuTempMonitor.Text=SensorText(lastSystem.CpuTempC,"°C");
             if(gpuLoadMonitor!=null&&!gpuLoadMonitor.IsDisposed)gpuLoadMonitor.Text=SensorText(lastSystem.GpuLoad,"%");
             if(gpuTempMonitor!=null&&!gpuTempMonitor.IsDisposed)gpuTempMonitor.Text=SensorText(lastSystem.GpuTempC,"°C");
@@ -1075,7 +1141,12 @@ namespace PacePilot
             Check(opt,"Always on top","همیشه روی سایر پنجره‌ها",17,91,w/2-25,()=>settings.AlwaysOnTop,v=>{settings.AlwaysOnTop=v;TopMost=v;});
             Check(opt,"Auto-select known games","انتخاب خودکار بازی‌های ذخیره‌شده",w/2,91,w/2-20,()=>settings.AutoSelectKnownGames,v=>settings.AutoSelectKnownGames=v);
             Action(opt,"Check for updates","بررسی بروزرسانی",17,138,210,41,true,(sender,e)=>CheckUpdates(true));
-            canvas.Height=Math.Max(viewport.Height,800);
+            StudioCard map=Card("SENSOR MAPPING  /  VRM","انتخاب و تطبیق سنسور VRM",x,765,w,151);
+            TextAt(map,"Choose and save exact GPU VRM and motherboard VRM identifiers.",
+                "شناسه واقعی سنسور VRM گرافیک و مادربرد را انتخاب و ذخیره کنید.",
+                17,44,w-34,30,10,false,theme.Secondary);
+            Action(map,"Map VRM Sensors…","انتخاب دستی سنسور VRM",17,92,260,40,true,(sender,e)=>OpenSensorMapping());
+            canvas.Height=Math.Max(viewport.Height,963);
         }
         void ToggleOsd()
         {
@@ -1360,7 +1431,8 @@ namespace PacePilot
         {
             if(!testing&&!finishing&&settings.MinimizeToTray&&e.CloseReason==CloseReason.UserClosing)
             {e.Cancel=true;Hide();ShowInTaskbar=false;return;}
-            if(timer!=null)timer.Dispose();osd.Clear();if(tray!=null){tray.Visible=false;tray.Dispose();}
+            if(timer!=null)timer.Dispose();osd.Clear();hardwareTooltips.Dispose();
+            if(tray!=null){tray.Visible=false;tray.Dispose();}
             base.OnFormClosing(e);
         }
         public void SelfTest()
@@ -1373,7 +1445,8 @@ namespace PacePilot
                     Size=size;PerformLayout();Application.DoEvents();FitCanvas();
                     if(shell.GetControlFromPosition(0,0).Right>viewport.Left)throw new Exception("Overlap: "+t.Id);
                     if(canvas.Controls.Count<4||fpsBox==null||targetBox==null||graph==null)throw new Exception("Missing core controls: "+t.Id);
-                    if(activity==null||dashboardHardware.Count!=9||ramReadyValue==null||frameFeedStatus==null)
+                    if(activity==null||dashboardHardware.Count!=9||hardwareCaptions.Count!=9||
+                       ramReadyValue==null||frameFeedStatus==null)
                         throw new Exception("Missing RAM readiness, hardware, or RTSS activity widgets: "+t.Id);
                     if(apply.Right>apply.Parent.Width||disable.Right>disable.Parent.Width||fpsBox.Right>fpsBox.Parent.Width)throw new Exception("Clipped FPS controls: "+t.Id);
                 }
@@ -1401,6 +1474,29 @@ namespace PacePilot
             if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
             if(!HardwareFallback.SelfTest())throw new Exception("Windows GPU performance counter fallback");
             if(!BuiltInSensors.SelfTest())throw new Exception("Built-in sensor engine / missing bundled DLL");
+            if(!HardwareInventoryService.SelfTest()||!HardwareSensorService.SelfTest())
+                throw new Exception("Hardware inventory or mapping model");
+            using(SensorMappingForm mappingForm=new SensorMappingForm(new AppSettings(),true))
+            {
+                if(mappingForm.Controls.OfType<ComboBox>().Count()!=2 ||
+                   mappingForm.SelectedGpuId!="" || mappingForm.SelectedBoardId!="")
+                    throw new Exception("Sensor mapping form controls or defaults");
+            }
+            // Verify a saved sensor identifier survives XML serialization.
+            AppSettings mappingCheck=new AppSettings();
+            mappingCheck.GpuVrmSensorId="/gpu-amd/0/temperature/1";
+            mappingCheck.BoardVrmSensorId="/lpc/nuvoton/temperature/3";
+            System.Xml.Serialization.XmlSerializer serializer=
+                new System.Xml.Serialization.XmlSerializer(typeof(AppSettings));
+            using(System.IO.MemoryStream stream=new System.IO.MemoryStream())
+            {
+                serializer.Serialize(stream,mappingCheck);
+                stream.Position=0;
+                AppSettings restored=(AppSettings)serializer.Deserialize(stream);
+                if(restored.GpuVrmSensorId!=mappingCheck.GpuVrmSensorId ||
+                   restored.BoardVrmSensorId!=mappingCheck.BoardVrmSensorId)
+                    throw new Exception("VRM mapping XML settings roundtrip");
+            }
             if(!AfterburnerBridge.SelfTest())throw new Exception("Afterburner shared memory parser");
             if(!RamReadiness.SelfTest()||!FrameActivityBar.SelfTest())throw new Exception("RAM readiness or real frametime visual");
             // Native vector graphics should always render at scale without needing JPG artwork.
