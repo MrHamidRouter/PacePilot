@@ -20,12 +20,12 @@ using Microsoft.Win32;
 using System.Reflection;
 
 [assembly: AssemblyTitle("PacePilot")]
-[assembly: AssemblyDescription("Windows Frame Pacing frontend for RTSS")]
+[assembly: AssemblyDescription("PacePilot Studio | Gaming Performance & Hardware Telemetry")]
 [assembly: AssemblyCompany("Mr.HamidRouter")]
 [assembly: AssemblyProduct("PacePilot")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Mr.HamidRouter")]
-[assembly: AssemblyVersion("2.6.0.0")]
-[assembly: AssemblyFileVersion("2.6.0.0")]
+[assembly: AssemblyVersion("2.6.1.0")]
+[assembly: AssemblyFileVersion("2.6.1.0")]
 
 namespace PacePilot
 {

@@ -1,3 +1,17 @@
+# PacePilot Studio v2.6.1 — راهنمای رسمی دانلود و امنیت
+
+**توسعه‌دهنده:** Mr.HamidRouter · **Windows 10/11 x64** · **C# / WinForms**
+
+فایل کوچک ZIP به‌تنهایی نه علامت ویروس است و نه ضمانت سالم‌بودن. این نسخه به‌صورت فشرده منتشر می‌شود و کتابخانه‌های پایش سخت‌افزار داخل بسته هستند؛ فقط RTSS برای محدودسازی فریم و OSD جداگانه نصب می‌شود.
+
+- نسخه رسمی: https://github.com/MrHamidRouter/PacePilot/releases/latest
+- فایل ZIP را همراه `PacePilot-Windows-x64.zip.sha256` دریافت و هش آن را قبل از اجرا با `Get-FileHash` بررسی کنید.
+- فایل `INTEGRITY_MANIFEST.json` در بسته، شناسه Commit و SHA-256 هر فایل اجرایی و DLL را نشان می‌دهد.
+- نسخه قابل‌حمل **تا زمانی که گواهی واقعی امضای کد تنظیم نشده باشد، امضای ناشر معتبر ندارد**؛ بنابراین SmartScreen ممکن است هشدار بدهد. برای اجرای برنامه آنتی‌ویروس را غیرفعال نکنید.
+- راهنمای کامل: `SECURITY_AND_RELEASE.md` داخل ZIP یا https://github.com/MrHamidRouter/PacePilot/blob/main/Docs/SECURITY_AND_RELEASE.md
+
+---
+
 # PacePilot Studio v2.1
 
 ### اجرای Administrator و محدودسازی FPS (نسخه ۲.۱.۱)

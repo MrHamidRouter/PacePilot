@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
 jobs:
   windows:
     runs-on: windows-latest
@@ -44,7 +47,7 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /out:Bin\PacePilot-test.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs Source\BuiltInSensors.cs Source\HardwareInventoryService.cs Source\HardwareSensorService.cs Source\SensorMappingForm.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /out:Bin\PacePilot-test.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs Source\BuiltInSensors.cs Source\HardwareInventoryService.cs Source\HardwareSensorService.cs Source\SensorMappingForm.cs Source\ReleaseTrust.cs
       - name: English and Persian UI self-test
         shell: powershell
         run: |
@@ -57,10 +60,41 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /win32manifest:Assets\PacePilot.Administrator.manifest /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs Source\BuiltInSensors.cs Source\HardwareInventoryService.cs Source\HardwareSensorService.cs Source\SensorMappingForm.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /win32manifest:Assets\PacePilot.Administrator.manifest /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs Source\BuiltInSensors.cs Source\HardwareInventoryService.cs Source\HardwareSensorService.cs Source\SensorMappingForm.cs Source\ReleaseTrust.cs
+
+      - name: Optional Authenticode signing (only with real trusted certificate)
+        shell: powershell
+        env:
+          PACEPILOT_SIGNING_PFX_BASE64: ${{ secrets.PACEPILOT_SIGNING_PFX_BASE64 }}
+          PACEPILOT_SIGNING_PASSWORD: ${{ secrets.PACEPILOT_SIGNING_PASSWORD }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:PACEPILOT_SIGNING_PFX_BASE64)) {
+            Write-Host 'No signing credential configured: this release is UNSIGNED, Windows may show Unknown Publisher.'
+            exit 0
+          }
+          if ([string]::IsNullOrWhiteSpace($env:PACEPILOT_SIGNING_PASSWORD)) {
+            throw 'Signing certificate configured without password.'
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP 'pacepilot-signing.pfx'
+          try {
+            [System.IO.File]::WriteAllBytes($pfx,[Convert]::FromBase64String($env:PACEPILOT_SIGNING_PFX_BASE64))
+            $kitRoot = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
+            $tool = Get-ChildItem -Path $kitRoot -Filter signtool.exe -Recurse -File |
+              Where-Object { $_.DirectoryName -match '\\x64$' } |
+              Sort-Object FullName -Descending | Select-Object -First 1
+            if (-not $tool) { throw 'signtool.exe not found on Windows build runner' }
+            & $tool.FullName sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /f $pfx /p $env:PACEPILOT_SIGNING_PASSWORD Bin\PacePilot.exe
+            if ($LASTEXITCODE -ne 0) { throw 'Authenticode signing failed' }
+            $signature = Get-AuthenticodeSignature Bin\PacePilot.exe
+            if ($signature.Status -ne 'Valid') { throw "Authenticode verification failed: $($signature.Status)" }
+            Write-Host "Authenticode publisher verified: $($signature.SignerCertificate.Subject)"
+          }
+          finally { Remove-Item $pfx -Force -ErrorAction SilentlyContinue }
       - name: Pack a single ready-to-use Windows ZIP
         shell: powershell
         run: |
+          $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Path dist/package -Force | Out-Null
           Copy-Item Bin/PacePilot.exe dist/package/PacePilot.exe
           Get-ChildItem Bin -Filter '*.dll' -File | Copy-Item -Destination dist/package/ -Force
@@ -69,15 +103,76 @@ jobs:
           Copy-Item Setup-PacePilot.bat dist/package/Setup-PacePilot.bat
           Copy-Item README_FA.md dist/package/README_FA.md
           Copy-Item README_EN.md dist/package/README_EN.md
+          Copy-Item Docs/SECURITY_AND_RELEASE.md dist/package/SECURITY_AND_RELEASE.md
+          # Per-file hashes can be compared without any executable tool or installer.
+          $entries = @(Get-ChildItem -Path dist/package -File | Sort-Object Name | ForEach-Object {
+            [ordered]@{
+              name = $_.Name
+              size_bytes = $_.Length
+              sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            }
+          })
+          $sign = Get-AuthenticodeSignature dist/package/PacePilot.exe
+          $manifest = [ordered]@{
+            product = 'PacePilot Studio'
+            version = '2.6.1'
+            developer = 'Mr.HamidRouter'
+            source_repository = 'https://github.com/MrHamidRouter/PacePilot'
+            commit = $env:GITHUB_SHA
+            build_utc = (Get-Date).ToUniversalTime().ToString('o')
+            publisher_signature = $sign.Status.ToString()
+            signed_publisher = $(if ($sign.SignerCertificate) { $sign.SignerCertificate.Subject } else { $null })
+            files = $entries
+          }
+          $manifest | ConvertTo-Json -Depth 7 | Set-Content dist/package/INTEGRITY_MANIFEST.json -Encoding UTF8
           Compress-Archive -Path dist/package/* -DestinationPath dist/PacePilot-Windows-x64.zip -Force
           if (-not (Test-Path dist/PacePilot-Windows-x64.zip)) { throw 'ZIP packaging failed' }
+          $zipHash = (Get-FileHash dist/PacePilot-Windows-x64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          [System.IO.File]::WriteAllText(
+             (Join-Path (Resolve-Path dist) 'PacePilot-Windows-x64.zip.sha256'),
+             "$zipHash  PacePilot-Windows-x64.zip" + [Environment]::NewLine,
+             [System.Text.Encoding]::ASCII)
+          if ($zipHash -ne (Get-FileHash dist/PacePilot-Windows-x64.zip -Algorithm SHA256).Hash.ToLowerInvariant()) {
+            throw 'ZIP checksum verification failed'
+          }
+          Write-Host "Release ZIP SHA-256: $zipHash"
+          Write-Host "Signed publisher status: $($sign.Status)"
+      - name: Verify release ZIP contents against published per-file hashes
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $unpacked = Join-Path $env:RUNNER_TEMP 'PacePilot-Verify'
+          Expand-Archive -Path dist/PacePilot-Windows-x64.zip -DestinationPath $unpacked -Force
+          $manifest = Get-Content (Join-Path $unpacked 'INTEGRITY_MANIFEST.json') -Raw | ConvertFrom-Json
+          if ($manifest.version -ne '2.6.1') { throw 'Mismatched manifest version' }
+          if ($manifest.commit -ne $env:GITHUB_SHA) { throw 'Mismatched manifest source commit' }
+          foreach ($entry in $manifest.files) {
+            $file = Join-Path $unpacked $entry.name
+            if (-not (Test-Path -LiteralPath $file)) { throw "Missing packaged file: $($entry.name)" }
+            $actual = Get-FileHash -LiteralPath $file -Algorithm SHA256
+            if ($actual.Hash.ToLowerInvariant() -ne $entry.sha256) {
+              throw "SHA-256 mismatch in packaged file $($entry.name)"
+            }
+            if ((Get-Item -LiteralPath $file).Length -ne $entry.size_bytes) {
+              throw "Size mismatch in packaged file $($entry.name)"
+            }
+          }
+          Write-Host "Verified $(@($manifest.files).Count) packaged files and source commit."
       - name: Publish ready-to-use Windows ZIP
         uses: actions/upload-artifact@v7
         with:
           name: PacePilot-Windows-x64-ZIP
-          path: dist/PacePilot-Windows-x64.zip
+          path: |
+            dist/PacePilot-Windows-x64.zip
+            dist/PacePilot-Windows-x64.zip.sha256
           if-no-files-found: error
           retention-days: 90
+
+      - name: Attest the ZIP provenance (GitHub OIDC / Sigstore)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/PacePilot-Windows-x64.zip
 
       - name: Publish ZIP to the GitHub Releases download page
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -86,9 +181,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $repo = $env:GITHUB_REPOSITORY
-          $tag = 'v2.6.0'
+          $tag = 'v2.6.1'
           $package = 'dist/PacePilot-Windows-x64.zip'
-          if (-not (Test-Path $package)) { throw 'Release ZIP missing' }
+          $checksum = 'dist/PacePilot-Windows-x64.zip.sha256'
+          if (-not (Test-Path $package) -or -not (Test-Path $checksum)) { throw 'Release ZIP or SHA256 checksum missing' }
           # Listing releases succeeds with an empty array on first publication.
           # Avoid `gh release view` here: a 404 can terminate PowerShell.
           $releaseJson = gh release list --repo $repo --json tagName --limit 100
@@ -97,9 +193,9 @@ jobs:
           $exists = @($releases | Where-Object { $_.tagName -eq $tag }).Count -gt 0
           if ($exists) {
             Write-Host "Updating existing release $tag"
-            gh release upload $tag $package --clobber --repo $repo
+            gh release upload $tag $package $checksum --clobber --repo $repo
           } else {
             Write-Host "Creating first release $tag"
-            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.6.0' --notes 'PacePilot 2.6 integrates hardware inventory in a background task with CPU/GPU/motherboard/RAM names under nine native hardware tiles. Manual GPU VRM and motherboard VRM sensor mapping identifies exact LibreHardwareMonitor temperature sensor IDs, shows unavailable values, and saves selections in settings.xml. The original sensor engine, FPS/RTSS, OSD, themes and game profiles are preserved. Hardware without VRM temperature sensors still reports N/A.' --latest
+            gh release create $tag $package $checksum --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.6.1' --notes 'PacePilot Studio 2.6.1 release transparency: public SHA-256 ZIP checksum, in-package SHA-256 manifest per file, GitHub signed build provenance, honest executable signature status and security guide, clean version branding and new verification controls in About. This lightweight native WinForms build is not digitally signed unless a trusted Authenticode certificate is configured in repository secrets. Small ZIP size is due to compression and framework dependencies, not padding. RTSS, hardware telemetry, six themes and game libraries are unchanged.' --latest
           }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publish failed' }

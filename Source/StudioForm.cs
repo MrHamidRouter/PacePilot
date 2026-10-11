@@ -523,9 +523,11 @@ namespace PacePilot
             top+=221;
             MakeFrameActivity(x,top,w,112);
             top+=124;
-            int sensorColumns=w<620?3:(w<1140?5:9);
+            // Avoid nine tiny single-line cards on high-resolution desktops.
+            // A measured 2-5 column grid favors legibility over screenshot-like density.
+            int sensorColumns=w<760?2:(w<1030?3:(w<1390?4:5));
             int sensorRows=(9+sensorColumns-1)/sensorColumns;
-            int sensorHeight=54+sensorRows*99;
+            int sensorHeight=54+sensorRows*128;
             MakeHardwareStrip(x,top,w,sensorHeight);
             top+=sensorHeight+12;
             MakeOptions(x,top,w,160);
@@ -552,16 +554,16 @@ namespace PacePilot
             string[] keys={"CPU","CTEMP","GPU","VRAM","RAM","PWR","TEMP","GVRM","VRM"};
             string[] en={"CPU Usage","CPU Temp","GPU Load","VRAM","RAM","GPU Power","GPU Temp","GPU VRM Temp","Board VRM Temp"};
             string[] fa={"درگیری CPU","دمای CPU","گرافیک","حافظه گرافیک","رم","توان GPU","دمای GPU","دمای VRM گرافیک","دمای VRM مادربرد"};
-            int padding=11,gap=5,columns=w<620?3:(w<1140?5:9);
-            int tileW=Math.Max(62,(w-2*padding-gap*(columns-1))/columns);
+            int padding=13,gap=10,columns=w<760?2:(w<1030?3:(w<1390?4:5));
+            int tileW=Math.Max(110,(w-2*padding-gap*(columns-1))/columns);
             for(int i=0;i<keys.Length;i++)
             {
                 int x0=padding+(i%columns)*(tileW+gap);
-                int y0=44+(i/columns)*99;
-                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,y0,tileW,94);card.Controls.Add(panel);
-                Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,23,8,false,theme.Secondary);
-                Label value=TextAt(panel,"—","—",7,28,tileW-12,34,tileW<98?10:13,true,theme.Accent);
-                Label caption=TextAt(panel,"Identifying hardware…","در حال شناسایی قطعه…",7,63,tileW-12,23,7,false,theme.Secondary);
+                int y0=44+(i/columns)*128;
+                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,y0,tileW,117);card.Controls.Add(panel);
+                Label name=TextAt(panel,en[i],fa[i],13,9,tileW-26,24,10,true,theme.Secondary);
+                Label value=TextAt(panel,"—","—",13,34,tileW-26,39,tileW<155?15:19,true,theme.Accent);
+                Label caption=TextAt(panel,"Identifying hardware…","در حال شناسایی قطعه…",13,79,tileW-26,27,9,false,theme.Secondary);
                 hardwareCaptions[keys[i]]=caption;
                 hardwareTooltips.SetToolTip(panel,caption.Text);
                 if(keys[i]!="CPU"&&keys[i]!="RAM")
@@ -1282,7 +1284,42 @@ namespace PacePilot
                 "این برنامه رابط مستقلی برای RTSS با مجوز MIT است. به FramePacer، RTSS یا Guru3D وابسته نیست. قابلیت‌های NVIDIA Reflex، تولید فریم DLSS و موتور اختصاصی تزریق فریم پیاده‌سازی نشده‌اند. نصب RTSS به اجازه کاربر نیاز دارد.",22,166,w-44,125,10,false,theme.Secondary);
             Action(c,"Project on GitHub","پروژه در گیت‌هاب",22,304,215,40,true,(s,e)=>OpenUrl("https://github.com/MrHamidRouter/PacePilot"));
             Action(c,"Check for updates","بررسی بروزرسانی",250,304,210,40,false,(s,e)=>CheckUpdates(true));
-            canvas.Height=Math.Max(viewport.Height,570);
+            StudioCard trust=Card("TRANSPARENT RELEASE  /  VERIFY YOUR DOWNLOAD",
+                "انتشار شفاف  |  امکان بررسی اصالت فایل",x,485,w,252);
+            TextAt(trust,"Portable C# / WinForms x64. Source, build logs and SHA-256 checksums are public.",
+                "نسخه قابل‌حمل C# / WinForms؛ سورس، گزارش Build و کد هش SHA-256 عمومی هستند.",
+                20,45,w-40,46,11,true,theme.Ink);
+            TextAt(trust,"An unsigned EXE may show Unknown Publisher / SmartScreen. A checksum verifies the",
+                "فایل بدون امضای معتبر ممکن است در SmartScreen ناشر ناشناس نمایش دهد.",
+                20,100,w-40,26,10,false,theme.Secondary);
+            TextAt(trust,"download against the published release, but it cannot guarantee malware safety.",
+                "تطبیق SHA-256 با نسخه رسمی، تغییرنکردن فایل را نشان می‌دهد؛ بی‌خطر بودن را تضمین نمی‌کند.",
+                20,126,w-40,43,10,false,theme.Secondary);
+            int trustButton=(w-64)/3;
+            Action(trust,"Copy EXE SHA-256","کپی هش SHA-256",20,185,trustButton,42,true,(s,e)=>CopyExecutableHash());
+            Action(trust,"Official downloads","دانلود رسمی",32+trustButton,185,trustButton,42,false,
+                (s,e)=>OpenUrl("https://github.com/MrHamidRouter/PacePilot/releases/latest"));
+            Action(trust,"Build & security","ساخت و امنیت",44+trustButton*2,185,trustButton,42,false,
+                (s,e)=>OpenUrl("https://github.com/MrHamidRouter/PacePilot/blob/main/Docs/SECURITY_AND_RELEASE.md"));
+            canvas.Height=Math.Max(viewport.Height,790);
+        }
+        void CopyExecutableHash()
+        {
+            try
+            {
+                string path=Application.ExecutablePath;
+                string sha=ReleaseTrust.Sha256File(path);
+                Clipboard.SetText(sha);
+                MessageBox.Show(this,L(
+                    "Local EXE SHA-256 (copied): ",
+                    "کد SHA-256 فایل فعلی (کپی شد): ")+sha+"\n\n"+
+                    ReleaseTrust.EmbeddedSignatureInfo(path)+"\n"+
+                    L("Compare with INTEGRITY_MANIFEST.json in the official GitHub release ZIP. This check alone does not establish malware safety.",
+                      "مقدار را با INTEGRITY_MANIFEST.json در ZIP رسمی گیت‌هاب مقایسه کنید. بررسی هش به‌تنهایی بی‌خطر بودن برنامه را ثابت نمی‌کند."),
+                    L("PacePilot download integrity","بررسی اصالت فایل PacePilot"),
+                    MessageBoxButtons.OK,MessageBoxIcon.Information);
+            }
+            catch(Exception e){MessageBox.Show(this,e.Message,L("Checksum error","خطای بررسی هش"),MessageBoxButtons.OK,MessageBoxIcon.Warning);}
         }
         void OpenUrl(string url){try{Process.Start(new ProcessStartInfo(url){UseShellExecute=true});}catch(Exception ex){MessageBox.Show(this,ex.Message);}}
         void InitializeRtss()
@@ -1470,6 +1507,7 @@ namespace PacePilot
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("Dashboard")))throw new Exception("English navigation");
             if(!GameDiscovery.SelfTest())throw new Exception("Game discovery parser");
             if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
+            if(!ReleaseTrust.SelfTest())throw new Exception("SHA-256 release-integrity implementation");
             if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
             if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
             if(!HardwareFallback.SelfTest())throw new Exception("Windows GPU performance counter fallback");

@@ -1,3 +1,17 @@
+# PacePilot Studio v2.6.1 — Official download & integrity
+
+**Developer:** Mr.HamidRouter · **Windows 10/11 x64** · **C# / WinForms**
+
+A compact compressed ZIP is neither a malware indicator nor proof of safety. The hardware monitoring DLLs are included; only RTSS remains a separate dependency for FPS limiting and OSD.
+
+- Official download: https://github.com/MrHamidRouter/PacePilot/releases/latest
+- Download `PacePilot-Windows-x64.zip.sha256` alongside the ZIP and verify its SHA-256 before running it.
+- `INTEGRITY_MANIFEST.json` inside the ZIP contains a source commit and per-file SHA-256 hashes.
+- **The portable EXE remains unsigned until a real publicly trusted publisher certificate is configured.** Windows SmartScreen may warn. Do not disable antivirus or Windows security to run it.
+- Full guide: `SECURITY_AND_RELEASE.md` in the ZIP, or https://github.com/MrHamidRouter/PacePilot/blob/main/Docs/SECURITY_AND_RELEASE.md
+
+---
+
 # PacePilot Studio v2.1
 
 ### Administrator launch and FPS verification (v2.1.1)
