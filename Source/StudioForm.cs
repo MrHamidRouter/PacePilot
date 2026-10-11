@@ -114,6 +114,19 @@ namespace PacePilot
                 Region old=Region;Region=new Region(path);if(old!=null)old.Dispose();
             }
         }
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
+            if(Width<3||Height<3){base.OnPaintBackground(e);return;}
+            using(GraphicsPath shape=RoundRect(new Rectangle(0,0,Width,Height),12))
+            using(LinearGradientBrush gradient=new LinearGradientBrush(
+                new Rectangle(0,0,Width,Height),
+                Theme.Light?ControlPaint.Light(Theme.Panel,.03f):ControlPaint.Light(Theme.Panel,.11f),
+                Theme.Panel,LinearGradientMode.ForwardDiagonal))
+            {
+                e.Graphics.FillPath(gradient,shape);
+            }
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -122,6 +135,8 @@ namespace PacePilot
             using(GraphicsPath path=RoundRect(new Rectangle(0,0,Width-1,Height-1),12))
             using(Pen border=new Pen(Theme.Border,1.15f))
                 e.Graphics.DrawPath(border,path);
+            using(Pen shine=new Pen(Color.FromArgb(Theme.Light?80:115,Theme.Accent),1.4f))
+                e.Graphics.DrawLine(shine,16,1,Math.Max(17,Math.Min(Width-17,150)),1);
         }
     }
     public sealed class ThemeCard : StudioCard
