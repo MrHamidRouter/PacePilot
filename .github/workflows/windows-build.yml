@@ -137,6 +137,27 @@ jobs:
           }
           Write-Host "Release ZIP SHA-256: $zipHash"
           Write-Host "Signed publisher status: $($sign.Status)"
+      - name: Verify release ZIP contents against published per-file hashes
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $unpacked = Join-Path $env:RUNNER_TEMP 'PacePilot-Verify'
+          Expand-Archive -Path dist/PacePilot-Windows-x64.zip -DestinationPath $unpacked -Force
+          $manifest = Get-Content (Join-Path $unpacked 'INTEGRITY_MANIFEST.json') -Raw | ConvertFrom-Json
+          if ($manifest.version -ne '2.6.1') { throw 'Mismatched manifest version' }
+          if ($manifest.commit -ne $env:GITHUB_SHA) { throw 'Mismatched manifest source commit' }
+          foreach ($entry in $manifest.files) {
+            $file = Join-Path $unpacked $entry.name
+            if (-not (Test-Path -LiteralPath $file)) { throw "Missing packaged file: $($entry.name)" }
+            $actual = Get-FileHash -LiteralPath $file -Algorithm SHA256
+            if ($actual.Hash.ToLowerInvariant() -ne $entry.sha256) {
+              throw "SHA-256 mismatch in packaged file $($entry.name)"
+            }
+            if ((Get-Item -LiteralPath $file).Length -ne $entry.size_bytes) {
+              throw "Size mismatch in packaged file $($entry.name)"
+            }
+          }
+          Write-Host "Verified $(@($manifest.files).Count) packaged files and source commit."
       - name: Publish ready-to-use Windows ZIP
         uses: actions/upload-artifact@v7
         with:
