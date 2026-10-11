@@ -324,7 +324,7 @@ namespace PacePilot
             ClientSize=new Size(1340,865); MinimumSize=new Size(950,665);
             Font=new Font("Segoe UI",9f); StartPosition=FormStartPosition.CenterScreen;
             AutoScaleMode=AutoScaleMode.Dpi;
-            Text="PacePilot Studio v2.5  |  Mr.HamidRouter";
+            Text="PacePilot Studio v"+GitHubUpdates.CurrentLabel+"  |  Mr.HamidRouter";
             try { Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { Icon=SystemIcons.Application; }
             currentTarget=String.IsNullOrEmpty(settings.LastTarget)?"Global":settings.LastTarget;
             Build();
@@ -1003,8 +1003,14 @@ namespace PacePilot
                         OpenUrl(release.Url);
                 }
                 else if(manual)
-                    MessageBox.Show(this,L("PacePilot 2.3.0 is up to date.","PacePilot نسخه ۲.۳.۰ به‌روز است."),
-                        L("Update check","بررسی بروزرسانی"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+                {
+                    string installed=GitHubUpdates.CurrentLabel;
+                    string latest=GitHubUpdates.ReleaseLabel(release);
+                    string description=L("Installed version: ","نسخه نصب‌شده: ")+installed+"\n"+
+                        L("Latest official GitHub release: ","آخرین نسخه منتشرشده در گیت‌هاب: ")+latest+"\n\n"+
+                        L("No newer compatible release was found.","نسخه جدیدتری برای دریافت پیدا نشد.");
+                    MessageBox.Show(this,description,L("Update check","بررسی بروزرسانی"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+                }
             };
             worker.RunWorkerAsync();
         }
@@ -1186,7 +1192,7 @@ namespace PacePilot
         void DrawAbout(int x,int w)
         {
             Header(x,w,"About PacePilot","درباره PacePilot","Precision FPS management for Windows gaming.","مدیریت دقیق نرخ فریم برای بازی‌های ویندوز.");
-            StudioCard c=Card("PACEPILOT STUDIO 2.5","PacePilot Studio نسخه ۲.۵",x,101,w,367);
+            StudioCard c=Card("PACEPILOT STUDIO "+GitHubUpdates.CurrentLabel,"PacePilot Studio نسخه "+GitHubUpdates.CurrentLabel,x,101,w,367);
             TextAt(c,"Developer: Mr.HamidRouter","توسعه‌دهنده: Mr.HamidRouter",22,62,w-44,35,15,true,theme.Accent);
             TextAt(c,"Bilingual interface  |  Custom themes  |  RTSS integration","رابط دو‌زبانه | طرح‌های اختصاصی | یکپارچگی با RTSS",22,110,w-44,40,11,false);
             TextAt(c,"This is an independent, MIT-licensed RTSS frontend. It is not affiliated with FramePacer, RTSS or Guru3D. NVIDIA Reflex, DLSS frame generation, and a proprietary frame-injection engine are not implemented. RTSS installation requires consent and may need administrator approval.",
