@@ -546,6 +546,7 @@ namespace PacePilot
         void ShowSensorHelp()
         {
             string info=L("Primary sensor provider: ","منبع اصلی سنسورها: ")+HwInfoBridge.Status+"\n"+
+                L("MSI Afterburner: ","اطلاعات MSI Afterburner: ")+AfterburnerBridge.Status+"\n"+
                 L("Other sensor providers: ","منابع جایگزین: ")+HardwareFallback.Status+"\n"+
                 L("Detected fallback sensors: ","سنسورهای تشخیص‌داده‌شده: ")+HardwareFallback.ObservedSensors.ToString()+"\n\n"+
                 L("To display GPU temperature, clock, power and VRM: Open HWiNFO64 Sensors, enable Shared Memory Support in its MAIN Settings. Alternatively run LibreHardwareMonitor. On free HWiNFO, Shared Memory can turn off after 12 hours. A motherboard without a VRM temperature sensor cannot provide a VRM reading.",
@@ -846,6 +847,7 @@ namespace PacePilot
             lastFrame=sample;
             lastSystem=sampler.Read();
             HwInfoBridge.Enrich(ref lastSystem);
+            AfterburnerBridge.Enrich(ref lastSystem);
             HardwareFallback.Enrich(ref lastSystem);
             if(cpuTempMonitor!=null&&!cpuTempMonitor.IsDisposed)cpuTempMonitor.Text=SensorText(lastSystem.CpuTempC,"°C");
             if(gpuLoadMonitor!=null&&!gpuLoadMonitor.IsDisposed)gpuLoadMonitor.Text=SensorText(lastSystem.GpuLoad,"%");
@@ -1374,6 +1376,7 @@ namespace PacePilot
             if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
             if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
             if(!HardwareFallback.SelfTest())throw new Exception("WMI/Windows GPU sensor fallback");
+            if(!AfterburnerBridge.SelfTest())throw new Exception("Afterburner shared memory parser");
             if(!RamReadiness.SelfTest()||!FrameActivityBar.SelfTest())throw new Exception("RAM readiness or real frametime visual");
             // Native vector graphics should always render at scale without needing JPG artwork.
             using(PremiumHero hero=new PremiumHero(StudioTheme.All[0]))
