@@ -734,7 +734,7 @@ namespace PacePilot
                         OpenUrl(release.Url);
                 }
                 else if(manual)
-                    MessageBox.Show(this,L("PacePilot 2.1.0 is up to date.","PacePilot نسخه ۲.۱.۰ به‌روز است."),
+                    MessageBox.Show(this,L("PacePilot 2.1.1 is up to date.","PacePilot نسخه ۲.۱.۰ به‌روز است."),
                         L("Update check","بررسی بروزرسانی"),MessageBoxButtons.OK,MessageBoxIcon.Information);
             };
             worker.RunWorkerAsync();
@@ -906,6 +906,11 @@ namespace PacePilot
         void SetStartup(bool persist)
         {
             if(testing)return;
+            if(persist && settings.StartWithWindows)
+                MessageBox.Show(this,
+                    L("This version requests Administrator permission on every launch. Windows cannot guarantee a silent elevated startup. A UAC prompt may appear at sign-in. For quiet background startup use a non-elevated monitoring process.",
+                      "این نسخه هنگام اجرا درخواست Administrator می‌دهد. اجرای خودکار با دسترسی مدیر بدون پنجره UAC در ویندوز تضمین نمی‌شود و ممکن است هنگام ورود به ویندوز درخواست تأیید ظاهر شود."),
+                    L("Startup and Administrator access","اجرای خودکار و دسترسی مدیر"),MessageBoxButtons.OK,MessageBoxIcon.Information);
             try
             {
                 using(RegistryKey key=Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run",true))
