@@ -326,7 +326,7 @@ namespace PacePilot
         public string Diagnostics(string exe)
         {
             StringBuilder result = new StringBuilder();
-            result.AppendLine("PacePilot 1.4 RTSS diagnostics  " + DateTime.Now.ToString("u"));
+            result.AppendLine("PacePilot 2.1.1 RTSS diagnostics  " + DateTime.Now.ToString("u"));
             result.AppendLine("Windows: " + Environment.OSVersion.VersionString);
             try { result.AppendLine("Administrator: " + new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)); }
             catch (Exception e) { result.AppendLine("Elevation check error: " + e.Message); }
@@ -415,7 +415,7 @@ namespace PacePilot
                 int memory = RtssNative.GetProfileProperty("FramerateLimit", ptr, 4) ? Marshal.ReadInt32(ptr) : -1;
                 trace.AppendLine("Immediately after SetProfileProperty: " + memory);
                 if (memory != fps)
-                    throw new InvalidOperationException("RTSS could not retain the new setting in memory (" + memory + ").");
+                    trace.AppendLine("Native readback differs before saving; continue to SaveProfile and verified disk repair instead of aborting early.");
                 RtssNative.SaveProfile(name);
                 RtssNative.UpdateProfiles();
                 int confirmed = GetLimit(exe);
@@ -1528,7 +1528,7 @@ namespace PacePilot
             bool isNew;
             using (Mutex mutex = new Mutex(true, "Local\\PacePilot_Windows_GUI", out isNew))
             {
-                if (!isNew) { MessageBox.Show("Another PacePilot version is already running. Right-click its tray icon and choose Exit, then launch v1.3 again.\nBuilding the new EXE is safe even when the old version is open.", "PacePilot already open"); return; }
+                if (!isNew) { MessageBox.Show("Another PacePilot version is already running. Right-click its tray icon and choose Exit, then launch the latest PacePilot again.\nBuilding the new EXE is safe even when the old version is open.", "PacePilot already open"); return; }
                 try { WinApi.SetProcessDPIAware(); } catch { }
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
