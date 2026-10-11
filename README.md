@@ -1,5 +1,12 @@
 # PacePilot Studio 2.1 | نرم‌افزار کنترل فریم ویندوز
 
+### Windows Administrator / اجرای مدیر (v2.1.1)
+
+`PacePilot.exe` now requests **Administrator** via a standard Windows manifest. UAC confirmation is required; FPS updates are verified against RTSS and its saved profile before showing success. Running with Administrator cannot guarantee a silent startup without consent.
+
+نسخه ۲.۱.۱ هنگام اجرای فایل EXE درخواست مجوز Administrator می‌دهد. خطای بررسی زودهنگام حافظه RTSS اصلاح شده است؛ پس از ذخیره، مقدار FPS از فایل پروفایل و API بازخوانی می‌شود. اجرای خودکار بی‌صدا با دسترسی مدیر تضمین نمی‌شود و برنامه UAC را دور نمی‌زند.
+
+
 **[Website / سایت پروژه](https://mrhamidrouter.github.io/PacePilot/)** · **[Windows ZIP / دریافت ویندوز](https://github.com/MrHamidRouter/PacePilot/releases/latest/download/PacePilot-Windows-x64.zip)** · **[All releases / نسخه‌ها](https://github.com/MrHamidRouter/PacePilot/releases)**
 
 **Developer / توسعه‌دهنده: Mr.HamidRouter** · **Windows 10/11 x64** · **English / فارسی** · **MIT License**
