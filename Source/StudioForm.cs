@@ -1386,6 +1386,12 @@ namespace PacePilot
                 currentPage="dashboard";
             }
             settings.LanguageCode="fa";theme=StudioTheme.All[0];Build();
+            lastSystem.CpuTempC=64;
+            UpdateHardwareStrip();
+            if(!dashboardHardware.ContainsKey("CTEMP") ||
+               dashboardHardware["CTEMP"].Text!=SensorText(64,"°C"))
+                throw new Exception("CPU temperature tile is missing or not connected to live sensor data");
+            lastSystem.CpuTempC=null;
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("داشبورد")))throw new Exception("Persian navigation");
             settings.LanguageCode="en";Build();
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("Dashboard")))throw new Exception("English navigation");
