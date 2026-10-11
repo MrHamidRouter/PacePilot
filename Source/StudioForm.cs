@@ -176,6 +176,7 @@ namespace PacePilot
         SystemSample lastSystem;
         FrameSample lastFrame;
         Label cpuMonitorValue,ramMonitorValue,osdMonitorValue;
+        Label cpuTempMonitor,gpuLoadMonitor,gpuTempMonitor,gpuClockMonitor,gpuPowerMonitor,vramMonitor,vrmMonitor,sensorStatusMonitor;
         StudioTheme theme;
         string currentTarget="Global", currentPage="dashboard";
         bool rebuilding=false, finishing=false, prompted=false, installing=false;
@@ -617,15 +618,26 @@ namespace PacePilot
             FrameSample sample=rtss.IsRunning?LiveFrames.Read(currentTarget):new FrameSample();
             lastFrame=sample;
             lastSystem=sampler.Read();
+            HwInfoBridge.Enrich(ref lastSystem);
+            if(cpuTempMonitor!=null&&!cpuTempMonitor.IsDisposed)cpuTempMonitor.Text=SensorText(lastSystem.CpuTempC,"°C");
+            if(gpuLoadMonitor!=null&&!gpuLoadMonitor.IsDisposed)gpuLoadMonitor.Text=SensorText(lastSystem.GpuLoad,"%");
+            if(gpuTempMonitor!=null&&!gpuTempMonitor.IsDisposed)gpuTempMonitor.Text=SensorText(lastSystem.GpuTempC,"°C");
+            if(gpuClockMonitor!=null&&!gpuClockMonitor.IsDisposed)gpuClockMonitor.Text=SensorText(lastSystem.GpuClockMhz,"MHz");
+            if(gpuPowerMonitor!=null&&!gpuPowerMonitor.IsDisposed)gpuPowerMonitor.Text=SensorText(lastSystem.GpuPowerW,"W");
+            if(vramMonitor!=null&&!vramMonitor.IsDisposed)vramMonitor.Text=lastSystem.VramUsedGb.HasValue?
+                lastSystem.VramUsedGb.Value.ToString("0.0")+" / "+(lastSystem.VramTotalGb.HasValue?lastSystem.VramTotalGb.Value.ToString("0.0"):"?")+" GB":"—";
+            if(vrmMonitor!=null&&!vrmMonitor.IsDisposed)vrmMonitor.Text=SensorText(lastSystem.VrmTempC,"°C");
+            if(sensorStatusMonitor!=null&&!sensorStatusMonitor.IsDisposed)sensorStatusMonitor.Text=HwInfoBridge.Status;
             if(cpuMonitorValue!=null&&!cpuMonitorValue.IsDisposed)cpuMonitorValue.Text=lastSystem.CpuPercent.HasValue?lastSystem.CpuPercent.Value.ToString("0")+"%":"—";
             if(ramMonitorValue!=null&&!ramMonitorValue.IsDisposed)ramMonitorValue.Text=lastSystem.RamTotalGb>0?lastSystem.RamUsedGb.ToString("0.0")+" / "+lastSystem.RamTotalGb.ToString("0.0")+" GB":"—";
             if(osdMonitorValue!=null&&!osdMonitorValue.IsDisposed)osdMonitorValue.Text=settings.OsdEnabled?L("ON  •  Alt+Shift+O","فعال  •  Alt+Shift+O"):L("OFF  •  Alt+Shift+O","خاموش  •  Alt+Shift+O");
-            if(settings.OsdEnabled && rtss.IsRunning)
+            if(settings.OsdEnabled && rtss.IsRunning && !Guard.IsProtected(currentTarget) && !Guard.IsLauncherHelper(currentTarget))
                 osd.Update(RtssOsdBridge.Format(sample,lastSystem,currentTarget,settings.OsdShowCpu,settings.OsdShowRam));
             if(liveValue!=null&&!liveValue.IsDisposed)liveValue.Text=sample.Valid?sample.Fps.ToString("0.0"):"--";
             if(frameValue!=null&&!frameValue.IsDisposed)frameValue.Text=sample.Valid?sample.FrameMs.ToString("0.00")+" ms":"--";
             if(graph!=null&&!graph.IsDisposed)graph.Push(sample.Valid?sample.FrameMs:float.NaN);
         }
+        static string SensorText(double? value,string unit){return value.HasValue?value.Value.ToString("0.0")+" "+unit:"—";}
         void RefreshRtssStatus()
         {
             if(rtssValue!=null&&!rtssValue.IsDisposed)rtssValue.Text=rtss.IsRunning?L("Running","فعال"):rtss.IsReady?L("Stopped","متوقف"):L("Missing","نصب نیست");
@@ -872,13 +884,27 @@ namespace PacePilot
             string frameText=RtssOsdBridge.FrameBar(lastFrame.Valid?lastFrame.FrameMs:float.NaN);
             Label bar=TextAt(preview,frameText,frameText,18,49,w-36,48,16,true,theme.Accent);
             bar.Font=new Font("Consolas",16,FontStyle.Bold);
-            StudioCard gpu=Card("GPU / VRAM SENSORS","سنسورهای گرافیک و VRAM",x,654,w,150);
-            TextAt(gpu,"GPU usage · Temperature · Clock · Power · VRAM",
-                "استفاده GPU · دما · فرکانس · توان · VRAM",19,48,w-38,31,12,true,theme.Accent);
-            TextAt(gpu,"—  Hardware vendor sensor feed is not yet connected to this WinForms build. Data is never fabricated.",
-                "—  منبع سنسور سخت‌افزاری GPU هنوز به این نسخه متصل نیست؛ مقدار غیرواقعی نمایش داده نمی‌شود.",
-                19,89,w-38,43,10,false,theme.Secondary);
-            canvas.Height=Math.Max(viewport.ClientSize.Height,840);
+            StudioCard hardware=Card("HARDWARE SENSORS • REAL VALUES","سنسورهای سخت‌افزار • داده واقعی",x,654,w,90);
+            sensorStatusMonitor=TextAt(hardware,"Connecting...","در حال اتصال...",18,46,w-36,29,11,false,theme.Secondary);
+            int third=(w-24)/3,space=12;
+            StudioCard gpuUsage=Card("GPU USAGE","درگیری گرافیک",x,756,third,129);
+            gpuLoadMonitor=TextAt(gpuUsage,"—","—",16,48,third-32,60,23,true,theme.Accent);
+            StudioCard gpuTemp=Card("GPU TEMPERATURE","دمای گرافیک",x+third+space,756,third,129);
+            gpuTempMonitor=TextAt(gpuTemp,"—","—",16,48,third-32,60,22,true,theme.Accent);
+            StudioCard gpuClock=Card("GPU CORE CLOCK","فرکانس گرافیک",x+2*(third+space),756,third,129);
+            gpuClockMonitor=TextAt(gpuClock,"—","—",16,48,third-32,60,22,true,theme.Accent);
+            StudioCard gpuPower=Card("GPU POWER","توان مصرفی گرافیک",x,898,third,129);
+            gpuPowerMonitor=TextAt(gpuPower,"—","—",16,48,third-32,60,22,true,theme.Accent);
+            StudioCard vram=Card("VIDEO MEMORY","حافظه گرافیکی VRAM",x+third+space,898,third,129);
+            vramMonitor=TextAt(vram,"—","—",14,48,third-28,60,17,true,theme.Accent);
+            StudioCard vrm=Card("VRM TEMPERATURE","دمای VRM",x+2*(third+space),898,third,129);
+            vrmMonitor=TextAt(vrm,"—","—",16,48,third-32,60,21,true,theme.Accent);
+            StudioCard cpuTemp=Card("CPU PACKAGE TEMPERATURE","دمای پردازنده CPU",x,1039,w,102);
+            cpuTempMonitor=TextAt(cpuTemp,"—","—",18,47,w-36,42,22,true,theme.Accent);
+            TextAt(canvas,"GPU/VRM readings require HWiNFO64 Sensors: Shared Memory Support.",
+                "برای مشاهده GPU و VRM، گزینه Shared Memory Support را در سنسورهای HWiNFO64 فعال کنید.",
+                x,1156,w,49,10,false,theme.Secondary);
+            canvas.Height=Math.Max(viewport.ClientSize.Height,1230);
             if(!testing)UpdateLive();
         }
 
@@ -1098,6 +1124,7 @@ namespace PacePilot
             if(!GameDiscovery.SelfTest())throw new Exception("Game discovery parser");
             if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
             if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
+            if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
             currentPage="monitor";Build();if(!canvas.Controls.OfType<StudioCard>().Any())throw new Exception("Performance monitor page");
             string content="[General]\r\nName=keep\r\n[Framerate]\r\nLimit=0\r\nLimitDenominator=99\r\n";
             string patched=RtssProfileFile.SetFrameLimit(content,60);
