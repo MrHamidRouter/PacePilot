@@ -33,6 +33,23 @@ namespace PacePilot
             text.Append("FRAME TIME  ").Append(FrameBar(sample.Valid?sample.FrameMs:float.NaN));
             if (cpu && sys.CpuPercent.HasValue) text.Append("\nCPU ").Append(sys.CpuPercent.Value.ToString("0")).Append('%');
             if (ram && sys.RamTotalGb>0) text.Append("   RAM ").Append(sys.RamUsedGb.ToString("0.0")).Append('/').Append(sys.RamTotalGb.ToString("0.0")).Append("GB");
+            if(sys.CpuTempC.HasValue) text.Append("   CPU ").Append(sys.CpuTempC.Value.ToString("0")).Append("C");
+            if(sys.GpuLoad.HasValue || sys.GpuTempC.HasValue || sys.GpuPowerW.HasValue || sys.GpuClockMhz.HasValue)
+            {
+                text.Append("
+GPU");
+                if(sys.GpuLoad.HasValue)text.Append(' ').Append(sys.GpuLoad.Value.ToString("0")).Append('%');
+                if(sys.GpuTempC.HasValue)text.Append(' ').Append(sys.GpuTempC.Value.ToString("0")).Append('C');
+                if(sys.GpuClockMhz.HasValue)text.Append(' ').Append(sys.GpuClockMhz.Value.ToString("0")).Append("MHz");
+                if(sys.GpuPowerW.HasValue)text.Append(' ').Append(sys.GpuPowerW.Value.ToString("0")).Append('W');
+            }
+            if(sys.VramUsedGb.HasValue || sys.VrmTempC.HasValue)
+            {
+                text.Append("
+");
+                if(sys.VramUsedGb.HasValue)text.Append("VRAM ").Append(sys.VramUsedGb.Value.ToString("0.0")).Append("GB");
+                if(sys.VrmTempC.HasValue)text.Append("   VRM ").Append(sys.VrmTempC.Value.ToString("0")).Append('C');
+            }
             return text.ToString();
         }
 
@@ -148,6 +165,7 @@ namespace PacePilot
     {
         public double? CpuPercent;
         public double RamUsedGb, RamTotalGb;
+        public double? CpuTempC, CpuClockGhz, GpuLoad, GpuTempC, GpuClockMhz, GpuPowerW, VramUsedGb, VramTotalGb, VrmTempC;
     }
     // Native Windows counters are collected without third-party services or fake GPU temperatures.
     public sealed class SystemSampler
