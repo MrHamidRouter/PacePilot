@@ -806,6 +806,82 @@ namespace PacePilot
             Action(opt,"Check for updates","بررسی بروزرسانی",17,138,210,41,true,(sender,e)=>CheckUpdates(true));
             canvas.Height=Math.Max(viewport.Height,800);
         }
+        void ToggleOsd()
+        {
+            if(testing)return;
+            if(settings.OsdEnabled)
+            {
+                settings.OsdEnabled=false;
+                osd.Clear();
+                Persist();UpdateLive();
+                SetStatus(L("In-game overlay disabled.","نمایش اطلاعات داخل بازی خاموش شد."),true);
+                return;
+            }
+            if(Guard.IsProtected(currentTarget)||Guard.IsLauncherHelper(currentTarget))
+            {
+                MessageBox.Show(this,L(
+                    "This is a protected game or launcher process. PacePilot does not override its anti-cheat restrictions. Choose a compatible game to use the RTSS overlay.",
+                    "این بازی یا پردازش لانچر محافظت‌شده است. PacePilot محدودیت‌های ضدتقلب را دور نمی‌زند. برای OSD یک بازی سازگار انتخاب کنید."),
+                    "PacePilot OSD",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                return;
+            }
+            if(!rtss.IsReady)
+            {
+                MessageBox.Show(this,L("RTSS is not installed. Install RTSS first.","RTSS نصب نیست. ابتدا RTSS را نصب کنید."),"PacePilot OSD");
+                return;
+            }
+            try
+            {
+                if(!rtss.IsRunning&&!rtss.Start())throw new InvalidOperationException("RTSS is not running.");
+                if(!osd.Update(RtssOsdBridge.Format(lastFrame,lastSystem,currentTarget,settings.OsdShowCpu,settings.OsdShowRam)))
+                    throw new IOException(osd.LastError);
+                settings.OsdEnabled=true;Persist();UpdateLive();
+                SetStatus(L("RTSS OSD enabled. Alt+Shift+O toggles the overlay.","نمایش OSD فعال شد؛ Alt+Shift+O برای روشن/خاموش."),true);
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(this,ex.Message,L("RTSS overlay unavailable","نمایش اطلاعات RTSS در دسترس نیست"),MessageBoxButtons.OK,MessageBoxIcon.Warning);
+            }
+        }
+        void DrawMonitor(int x,int w)
+        {
+            Header(x,w,"Gaming Performance HUD","نمایش عملکرد هنگام بازی",
+                "Live measurements, RTSS overlay and a configurable hotkey. No synthetic data.",
+                "اندازه‌گیری زنده، نمایش اطلاعات روی بازی و میانبر قابل‌استفاده.");
+            int gap=12;int half=(w-gap)/2;
+            StudioCard cpu=Card("CPU LOAD","پردازنده | CPU",x,101,half,161);
+            cpuMonitorValue=TextAt(cpu,"—","—",19,54,half-38,69,27,true,theme.Accent);
+            TextAt(cpu,"Measured CPU load (%)","میزان استفاده واقعی از پردازنده",19,122,half-38,25,9,false,theme.Secondary);
+            StudioCard ram=Card("SYSTEM RAM","حافظه RAM",x+half+gap,101,half,161);
+            ramMonitorValue=TextAt(ram,"—","—",19,54,half-38,69,23,true,theme.Accent);
+            TextAt(ram,"Used / installed physical memory","میزان مصرف و ظرفیت حافظه فیزیکی",19,122,half-38,25,9,false,theme.Secondary);
+            StudioCard hud=Card("RTSS IN-GAME OVERLAY","نمایش اطلاعات روی بازی (OSD)",x,274,w,224);
+            osdMonitorValue=TextAt(hud,settings.OsdEnabled?"ON  •  Alt+Shift+O":"OFF  •  Alt+Shift+O",
+                settings.OsdEnabled?"فعال  •  Alt+Shift+O":"خاموش  •  Alt+Shift+O",
+                20,50,w-40,38,15,true,theme.Accent);
+            Action(hud,settings.OsdEnabled?"Hide OSD":"Show OSD",settings.OsdEnabled?"مخفی‌کردن OSD":"نمایش OSD",
+                18,104,210,43,true,(sender,e)=>{ToggleOsd();DrawPage();});
+            Check(hud,"Include CPU usage","نمایش استفاده CPU",249,109,Math.Max(140,(w-278)/2),
+                ()=>settings.OsdShowCpu,v=>settings.OsdShowCpu=v);
+            Check(hud,"Include RAM usage","نمایش مصرف RAM",249,147,Math.Max(140,(w-278)/2),
+                ()=>settings.OsdShowRam,v=>settings.OsdShowRam=v);
+            TextAt(hud,"Keyboard shortcut: Alt+Shift+O   |   Requires RTSS injection support for the selected game.",
+                "میانبر: Alt+Shift+O  |  نمایش روی بازی نیازمند پشتیبانی آن بازی از RTSS است.",
+                20,187,w-40,27,9,false,theme.Secondary);
+            StudioCard preview=Card("LIVE FRAME-TIME BAR","نوار زنده زمان فریم",x,510,w,132);
+            string frameText=RtssOsdBridge.FrameBar(lastFrame.Valid?lastFrame.FrameMs:float.NaN);
+            Label bar=TextAt(preview,frameText,frameText,18,49,w-36,48,16,true,theme.Accent);
+            bar.Font=new Font("Consolas",16,FontStyle.Bold);
+            StudioCard gpu=Card("GPU / VRAM SENSORS","سنسورهای گرافیک و VRAM",x,654,w,150);
+            TextAt(gpu,"GPU usage · Temperature · Clock · Power · VRAM",
+                "استفاده GPU · دما · فرکانس · توان · VRAM",19,48,w-38,31,12,true,theme.Accent);
+            TextAt(gpu,"—  Hardware vendor sensor feed is not yet connected to this WinForms build. Data is never fabricated.",
+                "—  منبع سنسور سخت‌افزاری GPU هنوز به این نسخه متصل نیست؛ مقدار غیرواقعی نمایش داده نمی‌شود.",
+                19,89,w-38,43,10,false,theme.Secondary);
+            canvas.Height=Math.Max(viewport.ClientSize.Height,840);
+            if(!testing)UpdateLive();
+        }
+
         void DrawRtss(int x,int w)
         {
             Header(x,w,"RTSS integration","یکپارچه‌سازی RTSS","Actual framerate enforcement uses the separately installed RTSS engine.","اعمال واقعی محدودیت فریم توسط موتور جداگانه RTSS انجام می‌شود.");
@@ -818,7 +894,7 @@ namespace PacePilot
             Action(c,"Official download website","سایت رسمی دانلود",17,212,260,34,false,(s,e)=>OpenUrl(RtssOfficial));
             StudioCard report=Card("DIAGNOSTICS","عیب‌یابی",x,383,w,240);
             Action(report,"Copy full diagnostics","کپی گزارش کامل",17,48,230,38,true,(s,e)=>{try{Clipboard.SetText(rtss.Diagnostics(currentTarget));MessageBox.Show(this,L("Diagnostics copied.","گزارش کپی شد."));}catch(Exception ex){MessageBox.Show(this,ex.Message);}});
-            TextAt(report,"PacePilot does not modify protected anti-cheat games. Do not use a global cap in protected online titles.","PacePilot تنظیمات بازی‌های دارای ضدتقلب محافظت‌شده را تغییر نمی‌دهد. از محدودیت عمومی برای این بازی‌ها استفاده نکنید.",17,104,w-37,100,10,false,theme.Secondary);
+            TextAt(report,"Protected games are blocked individually; background anti-cheat services alone no longer block unrelated games. Use Alt+Shift+O to toggle the RTSS overlay.","بازی‌های محافظت‌شده به‌صورت مستقل محدود می‌شوند؛ سرویس ضدتقلب پس‌زمینه مانع سایر بازی‌ها نمی‌شود. کلید Alt+Shift+O برای OSD است.",17,104,w-37,100,10,false,theme.Secondary);
             canvas.Height=Math.Max(viewport.Height,700);
         }
         void DrawLogs(int x,int w)
@@ -950,8 +1026,9 @@ namespace PacePilot
         {
             if(m.Msg==0x0312 && !testing)
             {
-                if(currentPage!="dashboard"){currentPage="dashboard";Build();}
                 int hotkey=m.WParam.ToInt32();
+                if(hotkey==0xD103){ToggleOsd();return;}
+                if(currentPage!="dashboard"){currentPage="dashboard";Build();}
                 if(fpsBox!=null)
                 {
                     if(hotkey==0xD100){fpsBox.Value=fpsBox.Value==0?Math.Max(1,lastNonZero):0;ApplyLimit(true);}
@@ -1020,6 +1097,8 @@ namespace PacePilot
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("Dashboard")))throw new Exception("English navigation");
             if(!GameDiscovery.SelfTest())throw new Exception("Game discovery parser");
             if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
+            if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
+            currentPage="monitor";Build();if(!canvas.Controls.OfType<StudioCard>().Any())throw new Exception("Performance monitor page");
             string content="[General]\r\nName=keep\r\n[Framerate]\r\nLimit=0\r\nLimitDenominator=99\r\n";
             string patched=RtssProfileFile.SetFrameLimit(content,60);
             if(!patched.Contains("Limit=60")||!patched.Contains("LimitDenominator=1")||!patched.Contains("Name=keep"))throw new Exception("RTSS profile regression");
