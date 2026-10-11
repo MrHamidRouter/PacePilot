@@ -237,10 +237,18 @@ namespace PacePilot
             Record(s,"GpuAmd","GPU Power","Power",115);
             Record(s,"SuperIO","VRM MOS","Temperature",69);
             Record(s,"Cpu","CPU Package","Temperature",64);
+            bool bundled=false;
+            try
+            {
+                // Confirm the distributable contains a usable, loadable library,
+                // not merely a file with the right name.
+                Assembly a=Assembly.LoadFrom(LibraryPath);
+                bundled=a.GetType("LibreHardwareMonitor.Hardware.Computer",false,false)!=null;
+            }
+            catch{bundled=false;}
             return s.GpuLoad==91 && s.GpuTemp==72 && s.VramUsed==4 && s.GpuPower==115 &&
                 s.VrmTemp==69 && s.CpuTemp==64 &&
-                Priority("GpuAmd")<Priority("GpuIntel") &&
-                File.Exists(LibraryPath);
+                Priority("GpuAmd")<Priority("GpuIntel") && bundled;
         }
     }
 }
