@@ -24,7 +24,7 @@ namespace PacePilot
             return "[" + new string('#', active) + new string('-', 20-active) + "]";
         }
 
-        public static string Format(FrameSample sample, SystemSample sys, string exe, bool cpu, bool ram)
+        public static string Format(FrameSample sample, SystemSample sys, string exe, bool cpu, bool ram, bool gpu, bool vrm)
         {
             StringBuilder text=new StringBuilder();
             text.Append("PacePilot | ").Append(exe=="Global"?"All compatible games":exe).Append('\n');
@@ -33,8 +33,8 @@ namespace PacePilot
             text.Append("FRAME TIME  ").Append(FrameBar(sample.Valid?sample.FrameMs:float.NaN));
             if (cpu && sys.CpuPercent.HasValue) text.Append("\nCPU ").Append(sys.CpuPercent.Value.ToString("0")).Append('%');
             if (ram && sys.RamTotalGb>0) text.Append("   RAM ").Append(sys.RamUsedGb.ToString("0.0")).Append('/').Append(sys.RamTotalGb.ToString("0.0")).Append("GB");
-            if(sys.CpuTempC.HasValue) text.Append("   CPU ").Append(sys.CpuTempC.Value.ToString("0")).Append("C");
-            if(sys.GpuLoad.HasValue || sys.GpuTempC.HasValue || sys.GpuPowerW.HasValue || sys.GpuClockMhz.HasValue)
+            if(cpu && sys.CpuTempC.HasValue) text.Append("   CPU ").Append(sys.CpuTempC.Value.ToString("0")).Append("C");
+            if(gpu && (sys.GpuLoad.HasValue || sys.GpuTempC.HasValue || sys.GpuPowerW.HasValue || sys.GpuClockMhz.HasValue))
             {
                 text.Append("\nGPU");
                 if(sys.GpuLoad.HasValue)text.Append(' ').Append(sys.GpuLoad.Value.ToString("0")).Append('%');
@@ -42,11 +42,11 @@ namespace PacePilot
                 if(sys.GpuClockMhz.HasValue)text.Append(' ').Append(sys.GpuClockMhz.Value.ToString("0")).Append("MHz");
                 if(sys.GpuPowerW.HasValue)text.Append(' ').Append(sys.GpuPowerW.Value.ToString("0")).Append('W');
             }
-            if(sys.VramUsedGb.HasValue || sys.VrmTempC.HasValue)
+            if((gpu && sys.VramUsedGb.HasValue) || (vrm && sys.VrmTempC.HasValue))
             {
                 text.Append("\n");
-                if(sys.VramUsedGb.HasValue)text.Append("VRAM ").Append(sys.VramUsedGb.Value.ToString("0.0")).Append("GB");
-                if(sys.VrmTempC.HasValue)text.Append("   VRM ").Append(sys.VrmTempC.Value.ToString("0")).Append('C');
+                if(gpu && sys.VramUsedGb.HasValue)text.Append("VRAM ").Append(sys.VramUsedGb.Value.ToString("0.0")).Append("GB");
+                if(vrm && sys.VrmTempC.HasValue)text.Append("   VRM ").Append(sys.VrmTempC.Value.ToString("0")).Append('C');
             }
             return text.ToString();
         }
@@ -211,7 +211,7 @@ namespace PacePilot
         {
             return RtssOsdBridge.FrameBar(0).Length==22 &&
                    RtssOsdBridge.FrameBar(50).Contains("####################") &&
-                   RtssOsdBridge.Format(new FrameSample(),new SystemSample(),"Global",true,true).Contains("FPS --");
+                   RtssOsdBridge.Format(new FrameSample(),new SystemSample(),"Global",true,true,true,true).Contains("FPS --");
         }
     }
 }
