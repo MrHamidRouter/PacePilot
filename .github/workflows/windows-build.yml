@@ -36,6 +36,9 @@ jobs:
           foreach ($needed in @('LibreHardwareMonitorLib.dll','HidSharp.dll')) {
             if (-not (Test-Path (Join-Path Bin $needed))) { throw "Missing bundled sensor runtime: $needed" }
           }
+          # MPL-2.0 requires the library license to accompany redistribution.
+          Invoke-WebRequest -Uri https://raw.githubusercontent.com/spdx/license-list-data/main/text/MPL-2.0.txt -OutFile Bin/LICENSE-MPL-2.0.txt
+          if (-not (Test-Path Bin/LICENSE-MPL-2.0.txt)) { throw 'Missing MPL-2.0 license' }
           Write-Host 'Sensor runtime packaged beside PacePilot.exe; no hardware monitor installation is necessary.'
       - name: Build UI test executable (non-elevated)
         shell: cmd
@@ -62,6 +65,7 @@ jobs:
           Copy-Item Bin/PacePilot.exe dist/package/PacePilot.exe
           Get-ChildItem Bin -Filter '*.dll' -File | Copy-Item -Destination dist/package/ -Force
           Copy-Item Docs/THIRD_PARTY_NOTICES.md dist/package/THIRD_PARTY_NOTICES.md
+          Copy-Item Bin/LICENSE-MPL-2.0.txt dist/package/LICENSE-MPL-2.0.txt
           Copy-Item Setup-PacePilot.bat dist/package/Setup-PacePilot.bat
           Copy-Item README_FA.md dist/package/README_FA.md
           Copy-Item README_EN.md dist/package/README_EN.md
