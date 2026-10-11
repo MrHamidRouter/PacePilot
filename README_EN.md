@@ -71,3 +71,9 @@ Select **Prepare / Inspect** in the **Pre-game RAM readiness** panel to view phy
 
 GPU / VRM telemetry still depends on available HWiNFO64 shared-memory sensors. Missing measurements show **—**.
 
+
+## Version 2.4 — Premium native UI, no mockup wallpaper
+
+Six selectable skins now use native scalable graphics rather than low-resolution concept screenshot crops: gradient sidebar, custom vector hero, rounded metrics, custom buttons and live theme previews. The real-only frametime chart explains when RTSS has no game rendering samples. Existing RTSS limiting, OSD hotkey, game library, CPU/GPU monitoring, safe RAM readiness and GitHub update checks remain intact.
+
+The interface is a native implementation inspired by the approved designs, not a pixel-perfect bitmap conversion. Real-game UI and RTSS hook compatibility should be validated on Windows.
