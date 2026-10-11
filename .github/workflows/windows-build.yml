@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build UI test executable (non-elevated)
         shell: cmd
         run: |
@@ -40,7 +40,7 @@ jobs:
           Compress-Archive -Path dist/package/* -DestinationPath dist/PacePilot-Windows-x64.zip -Force
           if (-not (Test-Path dist/PacePilot-Windows-x64.zip)) { throw 'ZIP packaging failed' }
       - name: Publish ready-to-use Windows ZIP
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: PacePilot-Windows-x64-ZIP
           path: dist/PacePilot-Windows-x64.zip
