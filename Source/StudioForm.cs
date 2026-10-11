@@ -1476,6 +1476,12 @@ namespace PacePilot
             if(!BuiltInSensors.SelfTest())throw new Exception("Built-in sensor engine / missing bundled DLL");
             if(!HardwareInventoryService.SelfTest()||!HardwareSensorService.SelfTest())
                 throw new Exception("Hardware inventory or mapping model");
+            using(SensorMappingForm mappingForm=new SensorMappingForm(new AppSettings(),true))
+            {
+                if(mappingForm.Controls.OfType<ComboBox>().Count()!=2 ||
+                   mappingForm.SelectedGpuId!="" || mappingForm.SelectedBoardId!="")
+                    throw new Exception("Sensor mapping form controls or defaults");
+            }
             // Verify a saved sensor identifier survives XML serialization.
             AppSettings mappingCheck=new AppSettings();
             mappingCheck.GpuVrmSensorId="/gpu-amd/0/temperature/1";
