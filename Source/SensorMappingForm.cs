@@ -62,8 +62,7 @@ namespace PacePilot
                 var once=new System.Windows.Forms.Timer();
                 once.Interval=1200;
                 once.Tick+=(s,t)=>{once.Stop();once.Dispose();if(!IsDisposed)Populate(
-                    (gpuBox.SelectedItem as Choice)?.Id??"",
-                    (boardBox.SelectedItem as Choice)?.Id??"");};
+                    ChoiceId(gpuBox),ChoiceId(boardBox));};
                 once.Start();
             };
             Button save=Button(L("Save mapping","ذخیره انتخاب"),502,335,196);
@@ -71,8 +70,8 @@ namespace PacePilot
             save.ForeColor=Color.Black;
             save.Click+=(sender,e)=>
             {
-                SelectedGpuId=(gpuBox.SelectedItem as Choice)?.Id??"";
-                SelectedBoardId=(boardBox.SelectedItem as Choice)?.Id??"";
+                SelectedGpuId=ChoiceId(gpuBox);
+                SelectedBoardId=ChoiceId(boardBox);
                 DialogResult=DialogResult.OK;
                 Close();
             };
@@ -101,6 +100,11 @@ namespace PacePilot
             box.ForeColor=Color.White;
             box.DropDownWidth=850;
             Controls.Add(box);
+        }
+        static string ChoiceId(ComboBox box)
+        {
+            Choice item=box.SelectedItem as Choice;
+            return item==null?"":item.Id;
         }
         void Fill(ComboBox box,bool gpu,string selected)
         {
