@@ -89,6 +89,48 @@ namespace PacePilot
             return bitmap;
         }
     }
+    // Native owner-drawn controls: themed gradients and antialiased corners in every skin.
+    public sealed class StudioButton : Button
+    {
+        bool hovering,pressed;
+        public StudioButton()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw,true);
+            DoubleBuffered=true;
+        }
+        protected override void OnMouseEnter(EventArgs e){hovering=true;Invalidate();base.OnMouseEnter(e);}
+        protected override void OnMouseLeave(EventArgs e){hovering=false;pressed=false;Invalidate();base.OnMouseLeave(e);}
+        protected override void OnMouseDown(MouseEventArgs e){pressed=true;Invalidate();base.OnMouseDown(e);}
+        protected override void OnMouseUp(MouseEventArgs e){pressed=false;Invalidate();base.OnMouseUp(e);}
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;
+            if(Width<3||Height<3)return;
+            Rectangle rect=new Rectangle(0,0,Width-1,Height-1);
+            Color back=BackColor;
+            if(!Enabled)back=ControlPaint.Dark(back,.22f);
+            else if(pressed)back=ControlPaint.Dark(back,.14f);
+            else if(hovering)back=ControlPaint.Light(back,.12f);
+            using(GraphicsPath shape=StudioCard.RoundRect(rect,9))
+            using(LinearGradientBrush gradient=new LinearGradientBrush(rect,
+                ControlPaint.Light(back,.13f),back,LinearGradientMode.Vertical))
+            {
+                g.FillPath(gradient,shape);
+                using(Pen edge=new Pen(FlatAppearance.BorderColor.IsEmpty?ControlPaint.Light(back,.18f):FlatAppearance.BorderColor))
+                    g.DrawPath(edge,shape);
+            }
+            TextFormatFlags flags=TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|
+                TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine;
+            if(TextAlign==ContentAlignment.MiddleLeft)flags|=TextFormatFlags.Left;
+            else if(TextAlign==ContentAlignment.MiddleRight)flags|=TextFormatFlags.Right;
+            else flags|=TextFormatFlags.HorizontalCenter;
+            if(RightToLeft==RightToLeft.Yes)flags|=TextFormatFlags.RightToLeft;
+            Rectangle textRect=new Rectangle(Padding.Left+5,0,Math.Max(1,Width-Padding.Left-Padding.Right-10),Height);
+            TextRenderer.DrawText(g,Text,Font,textRect,Enabled?ForeColor:SystemColors.GrayText,flags);
+        }
+    }
+
     public class StudioCard : Panel
     {
         public StudioTheme Theme;
@@ -114,6 +156,19 @@ namespace PacePilot
                 Region old=Region;Region=new Region(path);if(old!=null)old.Dispose();
             }
         }
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
+            if(Width<3||Height<3){base.OnPaintBackground(e);return;}
+            using(GraphicsPath shape=RoundRect(new Rectangle(0,0,Width,Height),12))
+            using(LinearGradientBrush gradient=new LinearGradientBrush(
+                new Rectangle(0,0,Width,Height),
+                Theme.Light?ControlPaint.Light(Theme.Panel,.03f):ControlPaint.Light(Theme.Panel,.11f),
+                Theme.Panel,LinearGradientMode.ForwardDiagonal))
+            {
+                e.Graphics.FillPath(gradient,shape);
+            }
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -122,6 +177,8 @@ namespace PacePilot
             using(GraphicsPath path=RoundRect(new Rectangle(0,0,Width-1,Height-1),12))
             using(Pen border=new Pen(Theme.Border,1.15f))
                 e.Graphics.DrawPath(border,path);
+            using(Pen shine=new Pen(Color.FromArgb(Theme.Light?80:115,Theme.Accent),1.4f))
+                e.Graphics.DrawLine(shine,16,1,Math.Max(17,Math.Min(Width-17,150)),1);
         }
     }
     public sealed class ThemeCard : StudioCard
@@ -215,6 +272,9 @@ namespace PacePilot
         Button apply, disable;
         Label liveValue, frameValue, rtssValue, hzValue, statusLabel;
         StudioGraph graph;
+        FrameActivityBar activity;
+        Label frameFeedStatus,ramReadyValue;
+        readonly Dictionary<string,Label> dashboardHardware=new Dictionary<string,Label>();
         List<Button> presets = new List<Button>();
         readonly List<Control> pageControls=new List<Control>();
         NotifyIcon tray;
@@ -232,7 +292,7 @@ namespace PacePilot
             ClientSize=new Size(1340,865); MinimumSize=new Size(950,665);
             Font=new Font("Segoe UI",9f); StartPosition=FormStartPosition.CenterScreen;
             AutoScaleMode=AutoScaleMode.Dpi;
-            Text="PacePilot Studio v2.2  |  Mr.HamidRouter";
+            Text="PacePilot Studio v2.3  |  Mr.HamidRouter";
             try { Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { Icon=SystemIcons.Application; }
             currentTarget=String.IsNullOrEmpty(settings.LastTarget)?"Global":settings.LastTarget;
             Build();
@@ -261,7 +321,7 @@ namespace PacePilot
         }
         Button Action(Control p,string en,string fa,int x,int y,int w,int h,bool prominent,EventHandler click)
         {
-            Button b=new Button(); b.Text=L(en,fa); b.SetBounds(x,y,w,h);
+            Button b=new StudioButton(); b.Text=L(en,fa); b.SetBounds(x,y,w,h);
             b.ForeColor=prominent?theme.AccentInk:theme.Ink;
             b.BackColor=prominent?theme.Accent:theme.Sidebar;
             b.FlatStyle=FlatStyle.Flat; b.FlatAppearance.BorderColor=prominent?theme.Accent:theme.Border;
@@ -348,6 +408,7 @@ namespace PacePilot
         void DrawPage()
         {
             if(canvas==null)return;
+            dashboardHardware.Clear();activity=null;frameFeedStatus=null;ramReadyValue=null;
             canvas.SuspendLayout();
             while(canvas.Controls.Count>0){Control removed=canvas.Controls[0];canvas.Controls.Remove(removed);removed.Dispose();}
             presets.Clear();
@@ -366,60 +427,146 @@ namespace PacePilot
             TextAt(canvas,en,fa,x,16,w,40,20,true);
             TextAt(canvas,hintEn,hintFa,x,52,w,26,9,false,theme.Secondary);
         }
+        // Unified structure across ALL six visual themes; only artwork, palette and highlights change.
         void DrawDashboard(int x,int w)
         {
-            string heading=theme.Layout==3?"PACEPILOT / VELOCITY":theme.Layout==2?"PACEPILOT / NEBULA":theme.Layout==5?"PACEPILOT / EXECUTIVE":"PacePilot  •  Frame Control";
-            Header(x,w,heading,"PacePilot | کنترل هوشمند فریم",
-                "Precision FPS limiting • Per-game profiles • Real RTSS telemetry",
-                "محدودسازی FPS • پروفایل بازی • نمایش اطلاعات واقعی RTSS");
-            int gap=12, top=98, height=0;
-            int wide=w, left=(int)(w*0.59), right=w-left-gap;
-            if(theme.Layout!=3){MakeHero(x,top,wide,85);top+=97;}
-            if(theme.Layout==1)
+            Header(x,w,"PACEPILOT  /  PERFORMANCE STUDIO","PacePilot | استودیوی عملکرد بازی",
+                "Gaming performance • Precision FPS limiter • Live verified monitoring",
+                "کنترل دقیق نرخ فریم • پایش زنده • مدیریت اختصاصی بازی‌ها");
+            int gap=12;
+            int top=91;
+            MakeHero(x,top,w,111);
+            top+=123;
+            bool compact=w<840;
+            int left=compact?w:(int)(w*.57f);
+            int right=compact?w:w-left-gap;
+            int rowHeight=compact?376:170;
+            MakeTarget(x,top,left,156);
+            if(compact)
             {
-                MakeTarget(x,top,wide,148); MakeLimiter(x,top+160,wide,176);
-                MakeStats(x,top+348,wide,124,true); MakeGraph(x,top+484,wide,230);
-                MakeOptions(x,top+726,wide,152);height=top+897;
-            }
-            else if(theme.Layout==2)
-            {
-                int gameWidth=(int)(w*.31), bodyWidth=w-gameWidth-gap;
-                MakeTarget(x,top,gameWidth,308);
-                MakeLimiter(x+gameWidth+gap,top,bodyWidth,181);
-                MakeStats(x+gameWidth+gap,top+193,bodyWidth,114,true);
-                MakeGraph(x,top+320,wide,262);
-                MakeOptions(x,top+594,wide,168);height=top+781;
-            }
-            else if(theme.Layout==3)
-            {
-                MakeHero(x,top,wide,90);top+=102;
-                MakeTarget(x,top,left,159); MakeStats(x+left+gap,top,right,159,false);
-                MakeLimiter(x,top+171,left,193); MakeOptions(x+left+gap,top+171,right,193);
-                MakeGraph(x,top+376,wide,253);height=top+648;
-            }
-            else if(theme.Layout==4)
-            {
-                MakeTarget(x,top,left,166);MakeOptions(x+left+gap,top,right,174);
-                MakeLimiter(x,top+186,left,181);MakeStats(x+left+gap,top+186,right,181,false);
-                MakeGraph(x,top+379,wide,295);height=top+693;
-            }
-            else if(theme.Layout==5)
-            {
-                left=(int)(w*.46);right=w-left-gap;
-                MakeTarget(x,top,left,176);MakeLimiter(x,top+188,left,219);
-                MakeStats(x+left+gap,top,right,146,true);MakeGraph(x+left+gap,top+158,right,249);
-                MakeOptions(x,top+419,wide,178);height=top+618;
+                MakeStats(x,top+168,w,195,false);
+                top+=rowHeight;
             }
             else
             {
-                MakeTarget(x,top,wide,139);
-                MakeLimiter(x,top+151,left,185);MakeStats(x+left+gap,top+151,right,185,false);
-                MakeGraph(x,top+349,wide,259);
-                MakeOptions(x,top+620,wide,148);height=top+786;
+                MakeStats(x+left+gap,top,right,156,false);
+                top+=168;
             }
-            statusLabel=TextAt(canvas,"Ready. Select a game and apply a limit.","آماده؛ بازی را انتخاب و محدودیت را اعمال کنید.",x,height,wide,42,10,false,theme.Accent);
-            canvas.Height=Math.Max(viewport.ClientSize.Height,height+84);
-            RefreshSelection(); RefreshRtssStatus();
+            MakeLimiter(x,top,left,201);
+            if(compact)
+            {
+                MakeMemoryReady(x,top+213,w,171);
+                top+=396;
+            }
+            else
+            {
+                MakeMemoryReady(x+left+gap,top,right,201);
+                top+=213;
+            }
+            MakeGraph(x,top,w,209);
+            top+=221;
+            MakeFrameActivity(x,top,w,112);
+            top+=124;
+            MakeHardwareStrip(x,top,w,130);
+            top+=142;
+            MakeOptions(x,top,w,160);
+            top+=174;
+            statusLabel=TextAt(canvas,"Ready. Choose a supported game. FPS/frametime require an active RTSS render feed.",
+                "آماده؛ بازی سازگار را انتخاب کنید. نمودار نیازمند دریافت داده واقعی از RTSS است.",
+                x,top,w,44,10,false,theme.Accent);
+            canvas.Height=Math.Max(viewport.ClientSize.Height,top+70);
+            RefreshSelection();RefreshRtssStatus();
+        }
+        void MakeFrameActivity(int x,int y,int w,int h)
+        {
+            StudioCard card=Card("FRAME ACTIVITY  •  VERIFIED DATA ONLY","فعالیت فریم • صرفاً داده واقعی",x,y,w,h);
+            activity=new FrameActivityBar(theme);
+            activity.SetBounds(15,41,w-30,h-54);
+            activity.TargetFps=fpsBox==null?60:Math.Max(1,(int)fpsBox.Value);
+            card.Controls.Add(activity);
+            frameFeedStatus=TextAt(card,"WAITING FOR RENDER HOOK","در انتظار دریافت اطلاعات بازی",w/2,11,w/2-24,26,9,false,theme.Secondary);
+            frameFeedStatus.TextAlign=ContentAlignment.MiddleRight;
+        }
+        void MakeHardwareStrip(int x,int y,int w,int h)
+        {
+            StudioCard card=Card("HARDWARE TELEMETRY  •  SYSTEM SENSORS","سنسورهای سخت‌افزاری • پایش زنده",x,y,w,h);
+            string[] keys={"CPU","GPU","VRAM","RAM","PWR","TEMP","VRM"};
+            string[] en={"CPU","GPU Load","VRAM","RAM","GPU Power","GPU Temp","VRM Temp"};
+            string[] fa={"پردازنده","گرافیک","حافظه گرافیک","رم","توان GPU","دمای GPU","دمای VRM"};
+            int padding=11,gap=5,tileW=(w-2*padding-gap*6)/7;
+            for(int i=0;i<keys.Length;i++)
+            {
+                int x0=padding+i*(tileW+gap);
+                Panel panel=new Panel();panel.SetBounds(x0,44,tileW,75);panel.BackColor=theme.Sidebar;card.Controls.Add(panel);
+                panel.Paint+=(sender,args)=>
+                {
+                    using(Pen pen=new Pen(theme.Border))args.Graphics.DrawRectangle(pen,0,0,panel.Width-1,panel.Height-1);
+                };
+                Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,24,8,false,theme.Secondary);
+                Label value=TextAt(panel,"—","—",7,31,tileW-12,36,tileW<98?10:13,true,theme.Accent);
+                dashboardHardware[keys[i]]=value;
+            }
+            UpdateHardwareStrip();
+        }
+        void UpdateHardwareStrip()
+        {
+            string ram=lastSystem.RamTotalGb>0?lastSystem.RamUsedGb.ToString("0.0")+"/"+lastSystem.RamTotalGb.ToString("0.0")+" GB":"—";
+            string vram=lastSystem.VramUsedGb.HasValue?
+                lastSystem.VramUsedGb.Value.ToString("0.0")+"/"+(lastSystem.VramTotalGb.HasValue?lastSystem.VramTotalGb.Value.ToString("0.0"):"?")+" GB":"—";
+            string[] keys={"CPU","GPU","VRAM","RAM","PWR","TEMP","VRM"};
+            string[] values={
+                lastSystem.CpuPercent.HasValue?lastSystem.CpuPercent.Value.ToString("0")+"%":"—",
+                SensorText(lastSystem.GpuLoad,"%"),vram,ram,SensorText(lastSystem.GpuPowerW,"W"),
+                SensorText(lastSystem.GpuTempC,"°C"),SensorText(lastSystem.VrmTempC,"°C")
+            };
+            for(int i=0;i<keys.Length;i++)
+            {
+                Label l;
+                if(dashboardHardware.TryGetValue(keys[i],out l)&&l!=null&&!l.IsDisposed)l.Text=values[i];
+            }
+        }
+        void MakeMemoryReady(int x,int y,int w,int h)
+        {
+            StudioCard card=Card("PRE-GAME RAM READINESS","آماده‌سازی رم قبل از بازی",x,y,w,h);
+            ramReadyValue=TextAt(card,"Checking available memory…","در حال بررسی حافظه آزاد…",17,45,w-34,34,12,true,theme.Accent);
+            int btnY=h-49;
+            Action(card,"Prepare / Inspect","بررسی و آماده‌سازی",17,btnY,Math.Max(126,(w-45)/2),36,true,
+                (sender,e)=>PrepareRam());
+            Action(card,"Heavy apps","برنامه‌های پرمصرف",Math.Max(158,(w-45)/2)+24,btnY,
+                Math.Max(95,w-Math.Max(158,(w-45)/2)-42),36,false,(sender,e)=>ReviewHeavyApps());
+            RamReadinessSnapshot ram=RamReadiness.Inspect();
+            UpdateRamReadyValue(ram);
+        }
+        void UpdateRamReadyValue(RamReadinessSnapshot ram)
+        {
+            if(ramReadyValue==null||ramReadyValue.IsDisposed)return;
+            ramReadyValue.Text=ram.TotalGb>0?
+                L("Available ","حافظه آزاد ")+ram.AvailableGb.ToString("0.0")+" / "+ram.TotalGb.ToString("0.0")+" GB  ("+ram.AvailablePercent+"%)"
+                :L("Memory status unavailable","وضعیت حافظه در دسترس نیست");
+        }
+        void PrepareRam()
+        {
+            RamReadinessSnapshot before=RamReadiness.Inspect();
+            bool trimmed=RamReadiness.TrimOwnMemory();
+            RamReadinessSnapshot after=RamReadiness.Inspect();
+            UpdateRamReadyValue(after);
+            string result=L("PacePilot RAM preparation completed.","آماده‌سازی رم PacePilot انجام شد.")+"\n"+
+                L("Available before: ","حافظه آزاد قبل: ")+before.AvailableGb.ToString("0.00")+" GB\n"+
+                L("Available now: ","حافظه آزاد اکنون: ")+after.AvailableGb.ToString("0.00")+" GB\n"+
+                L("Trim own working set: ","آزادسازی حافظه اختصاصی برنامه: ")+(trimmed?"OK":"unavailable")+"\n\n"+
+                L("No system processes or standby lists were modified. Memory trimming does not guarantee more FPS.",
+                  "هیچ برنامه سیستمی بسته نشده و حافظه کش ویندوز دستکاری نشده است. افزایش FPS تضمینی نیست.");
+            MessageBox.Show(this,result,L("RAM readiness","آماده‌سازی حافظه"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+        }
+        void ReviewHeavyApps()
+        {
+            RamReadinessSnapshot ram=RamReadiness.Inspect();
+            string apps=ram.HeavyApps.Count==0?
+                L("No heavy desktop applications detected.","برنامه سنگین قابل مشاهده‌ای پیدا نشد.") :
+                String.Join("\n",ram.HeavyApps.ToArray());
+            MessageBox.Show(this,apps+"\n\n"+L("Close unneeded apps manually after saving your work; PacePilot does not kill processes.",
+                "پس از ذخیره کارها، برنامه‌های غیرضروری را خودتان ببندید؛ PacePilot هیچ پردازشی را اجباری متوقف نمی‌کند."),
+                L("Background memory usage","برنامه‌های پرمصرف"),MessageBoxButtons.OK,MessageBoxIcon.Information);
         }
         void MakeHero(int x,int y,int w,int h)
         {
@@ -534,6 +681,7 @@ namespace PacePilot
                 b.FlatAppearance.BorderColor=selected?theme.Accent:theme.Border;
             }
             if(graph!=null)graph.Target=Math.Max(1,val);
+            if(activity!=null&&!activity.IsDisposed)activity.TargetFps=Math.Max(1,val);
             if(apply!=null)apply.Text=L("▶ APPLY "+val+" FPS","▶ اعمال "+val+" فریم");
         }
         void ReadTargetLimit()
@@ -670,6 +818,17 @@ namespace PacePilot
             if(liveValue!=null&&!liveValue.IsDisposed)liveValue.Text=sample.Valid?sample.Fps.ToString("0.0"):"--";
             if(frameValue!=null&&!frameValue.IsDisposed)frameValue.Text=sample.Valid?sample.FrameMs.ToString("0.00")+" ms":"--";
             if(graph!=null&&!graph.IsDisposed)graph.Push(sample.Valid?sample.FrameMs:float.NaN);
+            if(activity!=null&&!activity.IsDisposed)activity.Push(sample.Valid?sample.FrameMs:float.NaN);
+            if(frameFeedStatus!=null&&!frameFeedStatus.IsDisposed)
+            {
+                frameFeedStatus.Text=sample.Valid?
+                    L("LIVE  •  "+sample.Fps.ToString("0")+" FPS","زنده • "+sample.Fps.ToString("0")+" فریم") :
+                    (Guard.IsLauncherHelper(currentTarget)?
+                        L("SELECT THE REAL GAME EXE","فایل اصلی بازی را انتخاب کنید"):
+                        L("AWAITING RTSS GAME HOOK","در انتظار اتصال RTSS به بازی"));
+                frameFeedStatus.ForeColor=sample.Valid?theme.Accent:Color.Orange;
+            }
+            UpdateHardwareStrip();
         }
         static string SensorText(double? value,string unit){return value.HasValue?value.Value.ToString("0.0")+" "+unit:"—";}
         void RefreshRtssStatus()
@@ -794,7 +953,7 @@ namespace PacePilot
                         OpenUrl(release.Url);
                 }
                 else if(manual)
-                    MessageBox.Show(this,L("PacePilot 2.1.1 is up to date.","PacePilot نسخه ۲.۱.۰ به‌روز است."),
+                    MessageBox.Show(this,L("PacePilot 2.3.0 is up to date.","PacePilot نسخه ۲.۳.۰ به‌روز است."),
                         L("Update check","بررسی بروزرسانی"),MessageBoxButtons.OK,MessageBoxIcon.Information);
             };
             worker.RunWorkerAsync();
@@ -976,7 +1135,7 @@ namespace PacePilot
         void DrawAbout(int x,int w)
         {
             Header(x,w,"About PacePilot","درباره PacePilot","Precision FPS management for Windows gaming.","مدیریت دقیق نرخ فریم برای بازی‌های ویندوز.");
-            StudioCard c=Card("PACEPILOT STUDIO 2.0","PacePilot Studio نسخه ۲",x,101,w,367);
+            StudioCard c=Card("PACEPILOT STUDIO 2.3","PacePilot Studio نسخه ۲.۳",x,101,w,367);
             TextAt(c,"Developer: Mr.HamidRouter","توسعه‌دهنده: Mr.HamidRouter",22,62,w-44,35,15,true,theme.Accent);
             TextAt(c,"Bilingual interface  |  Custom themes  |  RTSS integration","رابط دو‌زبانه | طرح‌های اختصاصی | یکپارچگی با RTSS",22,110,w-44,40,11,false);
             TextAt(c,"This is an independent, MIT-licensed RTSS frontend. It is not affiliated with FramePacer, RTSS or Guru3D. NVIDIA Reflex, DLSS frame generation, and a proprietary frame-injection engine are not implemented. RTSS installation requires consent and may need administrator approval.",
@@ -1145,6 +1304,8 @@ namespace PacePilot
                     Size=size;PerformLayout();Application.DoEvents();FitCanvas();
                     if(shell.GetControlFromPosition(0,0).Right>viewport.Left)throw new Exception("Overlap: "+t.Id);
                     if(canvas.Controls.Count<4||fpsBox==null||targetBox==null||graph==null)throw new Exception("Missing core controls: "+t.Id);
+                    if(activity==null||dashboardHardware.Count!=7||ramReadyValue==null||frameFeedStatus==null)
+                        throw new Exception("Missing RAM readiness, hardware, or RTSS activity widgets: "+t.Id);
                     if(apply.Right>apply.Parent.Width||disable.Right>disable.Parent.Width||fpsBox.Right>fpsBox.Parent.Width)throw new Exception("Clipped FPS controls: "+t.Id);
                 }
                 fpsBox.Value=144;
@@ -1163,6 +1324,7 @@ namespace PacePilot
             if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
             if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
             if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
+            if(!RamReadiness.SelfTest()||!FrameActivityBar.SelfTest())throw new Exception("RAM readiness or real frametime visual");
             if(!Guard.IsProtected("TslGame.exe") || Guard.IsProtected("Cyberpunk2077.exe") ||
                !Guard.IsLauncherHelper("UnrealCEFSubProcess_3071.exe") ||
                Guard.ShouldBlock("Cyberpunk2077.exe",Guard.Check("Cyberpunk2077.exe")))

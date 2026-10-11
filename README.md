@@ -105,3 +105,29 @@ PacePilot source: MIT. Third-party RTSS: separately licensed by its publisher. T
 - Download one ready-to-use ZIP from [Releases](https://github.com/MrHamidRouter/PacePilot/releases).
 
 **Developer: Mr.HamidRouter**
+
+## PacePilot 2.3 — Premium themes, live frame activity, and RAM readiness
+
+The **existing RTSS limiter, OSD hotkey, game library, saved profiles, and update checks remain in one executable.** The main dashboard now follows the same consistent layout in all **six embedded-artwork themes**; cards, borders and banner accents change to match each theme. These are native Windows controls built from the concepts, **not rasterized screenshots or a promise of pixel-perfect mockup reproduction**.
+
+### Real frametime feed
+The animated **Frame Activity** strip and **Frame-Time History** graph are driven by the same actual RTSS per-game frame samples. **FPS limit applied** and **RTSS process running** do not establish that a game-render hook is active. When no valid target-game samples arrive, the graph stays empty and an explicit **Awaiting RTSS game hook** message is shown instead of fabricated motion. Avoid selecting helper executables such as `UnrealCEFSubProcess.exe`; select the real game process. Protected games may not support injected RTSS OSD.
+
+### Safe pre-game memory check
+Select **Prepare / Inspect** in the **Pre-game RAM readiness** panel to view physical RAM and optionally trim **PacePilot's own** working set. **Heavy apps** lists visible user applications using significant memory, without force-closing anything. Launch games using your normal Steam/Epic shortcut after the check. PacePilot **does not** flush Windows standby memory, change memory quotas, kill background services, or promise FPS improvements. This button is optional and does not run at Windows startup.
+
+GPU / VRM telemetry still depends on available HWiNFO64 shared-memory sensors. Missing measurements show **—**.
+
+
+## نسخه ۲.۳ — شش پوسته، نمودار فریم واقعی و آمادگی رم
+
+موتور کنترل FPS قبلی، کتابخانه بازی‌ها، OSD با میانبر `Alt + Shift + O`، پروفایل‌ها و بررسی آپدیت **در همان فایل اجرایی حفظ شده‌اند**. صفحه اصلی اکنون برای هر شش پوسته ساختار هماهنگی دارد و از تصاویر تعبیه‌شده، رنگ‌بندی اختصاصی و کارت‌های گرافیکی استفاده می‌کند. این رابط کنترل‌های قابل‌استفاده ویندوز است و **تصاویر طراحی‌شده صرفاً مرجع بصری‌اند؛ انطباق پیکسلی تضمین نمی‌شود**.
+
+### نوار فعالیت Frame Time
+نوار فعالیت و نمودار فقط از **نمونه‌های واقعی RTSS** به‌روزرسانی می‌شوند. نصب و اجرای RTSS یا ذخیره محدودیت FPS به‌معنای دریافت خودکار اطلاعات فریم بازی نیست. اگر بازیِ انتخاب‌شده اتصال Render Hook نداشته باشد، به‌جای نمایش داده ساختگی، پیام «در انتظار اتصال RTSS به بازی» دیده می‌شود. فایل‌های کمکی مانند `UnrealCEFSubProcess.exe` را به‌عنوان فایل اصلی بازی انتخاب نکنید. نمایش OSD روی بازی‌های دارای ضدتقلب تضمین نمی‌شود.
+
+### بررسی رم قبل از بازی
+با دکمه **بررسی و آماده‌سازی** می‌توان حافظه فیزیکی را ارزیابی کرد و حافظه کاری **خود PacePilot** را (اختیاری و به درخواست کاربر) کاهش داد. گزینه **برنامه‌های پرمصرف** موارد سنگینِ قابل‌مشاهده را معرفی می‌کند. هیچ برنامه‌ای به‌زور بسته نمی‌شود؛ کش/Standby ویندوز دستکاری نمی‌شود و افزایش FPS تضمین نیست. پس از بررسی، بازی را از طریق Steam یا میانبر عادی اجرا کنید.
+
+اطلاعات GPU و VRM از حسگرهای واقعی HWiNFO64، در صورت موجود بودن، گرفته می‌شود؛ داده ناموجود با «—» نمایش داده می‌شود.
+

@@ -58,3 +58,16 @@ PacePilot is a standalone RTSS frontend, **not a reproduction of FramePacer's pr
 - Background anti-cheat *services* no longer block unrelated compatible games. **Actual protected titles** (e.g. PUBG/BattlEye, Valorant, Fortnite) remain excluded from PacePilot's external limits and hook-dependent OSD. Use each game's own FPS limiter.
 - A green GitHub Windows build and self-test do not establish real-game compatibility; verify FPS application and OSD visibility on the target system.
 
+
+## PacePilot 2.3 — Premium themes, live frame activity, and RAM readiness
+
+The **existing RTSS limiter, OSD hotkey, game library, saved profiles, and update checks remain in one executable.** The main dashboard now follows the same consistent layout in all **six embedded-artwork themes**; cards, borders and banner accents change to match each theme. These are native Windows controls built from the concepts, **not rasterized screenshots or a promise of pixel-perfect mockup reproduction**.
+
+### Real frametime feed
+The animated **Frame Activity** strip and **Frame-Time History** graph are driven by the same actual RTSS per-game frame samples. **FPS limit applied** and **RTSS process running** do not establish that a game-render hook is active. When no valid target-game samples arrive, the graph stays empty and an explicit **Awaiting RTSS game hook** message is shown instead of fabricated motion. Avoid selecting helper executables such as `UnrealCEFSubProcess.exe`; select the real game process. Protected games may not support injected RTSS OSD.
+
+### Safe pre-game memory check
+Select **Prepare / Inspect** in the **Pre-game RAM readiness** panel to view physical RAM and optionally trim **PacePilot's own** working set. **Heavy apps** lists visible user applications using significant memory, without force-closing anything. Launch games using your normal Steam/Epic shortcut after the check. PacePilot **does not** flush Windows standby memory, change memory quotas, kill background services, or promise FPS improvements. This button is optional and does not run at Windows startup.
+
+GPU / VRM telemetry still depends on available HWiNFO64 shared-memory sensors. Missing measurements show **—**.
+
