@@ -94,3 +94,5 @@ winget install --id Guru3D.RTSS --exact --source winget --silent --accept-packag
 - در نسخه رایگان HWiNFO، Shared Memory Support می‌تواند بعد از ۱۲ ساعت اجرای مداوم غیرفعال شود؛ باید دوباره فعالش کنید.
 
 برای بررسی: **HWiNFO64 → Sensors-only → Main Settings → Shared Memory Support**؛ در صورت نبود این منبع، LibreHardwareMonitor را با حسگرهای فعال اجرا کنید. این تغییرها افزایش FPS را تضمین نمی‌کنند.
+
+**منبع سوم سنسورها — MSI Afterburner:** اگر MSI Afterburner روی سیستم اجرا باشد، PacePilot مقادیر منتشرشده GPU در `MAHMSharedMemory` را هم به‌صورت مستقیم و فقط خواندنی بررسی می‌کند. در Afterburner قسمت **Settings → Monitoring**، گزینه‌های GPU temperature، GPU usage، Memory usage، Core clock و GPU power را در لیست گراف‌های فعال انتخاب کنید. RTSS به‌تنهایی دمای GPU یا VRM را تولید نمی‌کند. سنسور VRM تنها در صورتی نمایش داده می‌شود که سخت‌افزار و نرم‌افزار مانیتورینگ واقعاً آن را ارائه کنند.
