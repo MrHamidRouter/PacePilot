@@ -228,7 +228,20 @@ namespace PacePilot
             }
             float ty=r.Bottom-target/maximum*r.Height;
             using(Pen refPen=new Pen(Theme.Secondary,1)) { refPen.DashStyle=DashStyle.Dash; g.DrawLine(refPen,r.Left,ty,r.Right,ty); }
-            if(Values.Count<2) return;
+            int validSamples=Values.Count(x=>!float.IsNaN(x)&&x>0);
+            if(validSamples<2)
+            {
+                string msg="WAITING FOR VERIFIED RTSS FRAME DATA";
+                using(Font font=new Font("Segoe UI Semibold",10,FontStyle.Bold))
+                using(Brush brush=new SolidBrush(Theme.Secondary))
+                {
+                    SizeF label=g.MeasureString(msg,font);
+                    g.DrawString(msg,font,brush,
+                        r.Left+Math.Max(0,(r.Width-label.Width)/2),
+                        r.Top+Math.Max(0,(r.Height-label.Height)/2));
+                }
+                return;
+            }
             List<PointF> seq=new List<PointF>();
             float spacing=r.Width/Math.Max(179,Values.Count-1);
             for(int i=0;i<Values.Count;i++)
@@ -242,8 +255,27 @@ namespace PacePilot
         void PaintLine(Graphics g,List<PointF> seq)
         {
             if(seq.Count<2)return;
-            using(Pen glow=new Pen(Color.FromArgb(37,Theme.Graph),6)) g.DrawLines(glow,seq.ToArray());
-            using(Pen pen=new Pen(Theme.Graph,2)) g.DrawLines(pen,seq.ToArray());
+            PointF[] points=seq.ToArray();
+            if(points.Length>=3)
+            {
+                float bottom=Height-22;
+                using(GraphicsPath area=new GraphicsPath())
+                {
+                    area.AddLines(points);
+                    area.AddLine(points[points.Length-1],new PointF(points[points.Length-1].X,bottom));
+                    area.AddLine(new PointF(points[0].X,bottom),points[0]);
+                    area.CloseFigure();
+                    using(LinearGradientBrush shade=new LinearGradientBrush(
+                        new Rectangle(0,0,Math.Max(1,Width),Math.Max(1,Height)),
+                        Color.FromArgb(49,Theme.Graph),Color.FromArgb(0,Theme.Graph),
+                        LinearGradientMode.Vertical))
+                        g.FillPath(shade,area);
+                }
+            }
+            using(Pen glow=new Pen(Color.FromArgb(38,Theme.Graph),7))g.DrawLines(glow,points);
+            using(Pen pen=new Pen(Theme.Graph,2.1f))g.DrawLines(pen,points);
+            using(Brush dot=new SolidBrush(Theme.Graph))
+                g.FillEllipse(dot,points[points.Length-1].X-3,points[points.Length-1].Y-3,6,6);
         }
     }
 
@@ -496,11 +528,7 @@ namespace PacePilot
             for(int i=0;i<keys.Length;i++)
             {
                 int x0=padding+i*(tileW+gap);
-                Panel panel=new Panel();panel.SetBounds(x0,44,tileW,75);panel.BackColor=theme.Sidebar;card.Controls.Add(panel);
-                panel.Paint+=(sender,args)=>
-                {
-                    using(Pen pen=new Pen(theme.Border))args.Graphics.DrawRectangle(pen,0,0,panel.Width-1,panel.Height-1);
-                };
+                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,44,tileW,75);card.Controls.Add(panel);
                 Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,24,8,false,theme.Secondary);
                 Label value=TextAt(panel,"—","—",7,31,tileW-12,36,tileW<98?10:13,true,theme.Accent);
                 dashboardHardware[keys[i]]=value;
@@ -639,7 +667,7 @@ namespace PacePilot
             {
                 int cx=pad+(horizontal?i*(itemW+6):(i%2)*(itemW+7));
                 int cy=39+(horizontal?0:(i/2)*(itemH+4));
-                Panel sub=new Panel();sub.SetBounds(cx,cy,itemW,itemH);sub.BackColor=theme.Sidebar;c.Controls.Add(sub);
+                Panel sub=new PremiumMetricPanel(theme);sub.SetBounds(cx,cy,itemW,itemH);c.Controls.Add(sub);
                 TextAt(sub,ens[i],fas[i],8,3,Math.Max(1,itemW-14),19,8,false,theme.Secondary);
                 Label val=TextAt(sub,"--","--",8,21,Math.Max(1,itemW-14),Math.Max(19,itemH-25),12,true,i==3?theme.Accent:theme.Ink);
                 if(i==0)liveValue=val; if(i==1)frameValue=val;if(i==2)hzValue=val;if(i==3)rtssValue=val;
