@@ -79,6 +79,35 @@ namespace PacePilot
         }
     }
 
+    public sealed class PremiumMetricPanel : Panel
+    {
+        public StudioTheme Theme;
+        public PremiumMetricPanel(StudioTheme theme)
+        {
+            Theme=theme;BackColor=theme.Sidebar;DoubleBuffered=true;
+            SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.UserPaint|
+                     ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw,true);
+        }
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            if(Width<6||Height<6)return;
+            e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
+            using(GraphicsPath r=StudioCard.RoundRect(new Rectangle(0,0,Width-1,Height-1),8))
+            using(LinearGradientBrush fill=new LinearGradientBrush(
+                new Rectangle(0,0,Width,Height),
+                PremiumPaint.Mix(Theme.Sidebar,Theme.Panel,.18f),
+                PremiumPaint.Mix(Theme.Sidebar,Theme.Panel,.56f),
+                LinearGradientMode.ForwardDiagonal))
+            using(Pen outline=new Pen(Theme.Border,1))
+            {
+                e.Graphics.FillPath(fill,r);
+                e.Graphics.DrawPath(outline,r);
+            }
+            using(SolidBrush p=new SolidBrush(PremiumPaint.Alpha(Theme.Accent,190)))
+                e.Graphics.FillRectangle(p,9,9,3,3);
+        }
+    }
+
     // Fills only the actual sidebar surface; menu controls stay independently clickable.
     public sealed class PremiumSidebar : Panel
     {
