@@ -1282,7 +1282,42 @@ namespace PacePilot
                 "این برنامه رابط مستقلی برای RTSS با مجوز MIT است. به FramePacer، RTSS یا Guru3D وابسته نیست. قابلیت‌های NVIDIA Reflex، تولید فریم DLSS و موتور اختصاصی تزریق فریم پیاده‌سازی نشده‌اند. نصب RTSS به اجازه کاربر نیاز دارد.",22,166,w-44,125,10,false,theme.Secondary);
             Action(c,"Project on GitHub","پروژه در گیت‌هاب",22,304,215,40,true,(s,e)=>OpenUrl("https://github.com/MrHamidRouter/PacePilot"));
             Action(c,"Check for updates","بررسی بروزرسانی",250,304,210,40,false,(s,e)=>CheckUpdates(true));
-            canvas.Height=Math.Max(viewport.Height,570);
+            StudioCard trust=Card("TRANSPARENT RELEASE  /  VERIFY YOUR DOWNLOAD",
+                "انتشار شفاف  |  امکان بررسی اصالت فایل",x,485,w,252);
+            TextAt(trust,"Portable C# / WinForms x64. Source, build logs and SHA-256 checksums are public.",
+                "نسخه قابل‌حمل C# / WinForms؛ سورس، گزارش Build و کد هش SHA-256 عمومی هستند.",
+                20,45,w-40,46,11,true,theme.Ink);
+            TextAt(trust,"An unsigned EXE may show Unknown Publisher / SmartScreen. A checksum verifies the",
+                "فایل بدون امضای معتبر ممکن است در SmartScreen ناشر ناشناس نمایش دهد.",
+                20,100,w-40,26,10,false,theme.Secondary);
+            TextAt(trust,"download against the published release, but it cannot guarantee malware safety.",
+                "تطبیق SHA-256 با نسخه رسمی، تغییرنکردن فایل را نشان می‌دهد؛ بی‌خطر بودن را تضمین نمی‌کند.",
+                20,126,w-40,43,10,false,theme.Secondary);
+            int trustButton=(w-64)/3;
+            Action(trust,"Copy EXE SHA-256","کپی هش SHA-256",20,185,trustButton,42,true,(s,e)=>CopyExecutableHash());
+            Action(trust,"Official downloads","دانلود رسمی",32+trustButton,185,trustButton,42,false,
+                (s,e)=>OpenUrl("https://github.com/MrHamidRouter/PacePilot/releases/latest"));
+            Action(trust,"Build & security","ساخت و امنیت",44+trustButton*2,185,trustButton,42,false,
+                (s,e)=>OpenUrl("https://github.com/MrHamidRouter/PacePilot/blob/main/Docs/SECURITY_AND_RELEASE.md"));
+            canvas.Height=Math.Max(viewport.Height,790);
+        }
+        void CopyExecutableHash()
+        {
+            try
+            {
+                string path=Application.ExecutablePath;
+                string sha=ReleaseTrust.Sha256File(path);
+                Clipboard.SetText(sha);
+                MessageBox.Show(this,L(
+                    "Local EXE SHA-256 (copied): ",
+                    "کد SHA-256 فایل فعلی (کپی شد): ")+sha+"\n\n"+
+                    ReleaseTrust.EmbeddedSignatureInfo(path)+"\n"+
+                    L("Compare with INTEGRITY_MANIFEST.json in the official GitHub release ZIP. This check alone does not establish malware safety.",
+                      "مقدار را با INTEGRITY_MANIFEST.json در ZIP رسمی گیت‌هاب مقایسه کنید. بررسی هش به‌تنهایی بی‌خطر بودن برنامه را ثابت نمی‌کند."),
+                    L("PacePilot download integrity","بررسی اصالت فایل PacePilot"),
+                    MessageBoxButtons.OK,MessageBoxIcon.Information);
+            }
+            catch(Exception e){MessageBox.Show(this,e.Message,L("Checksum error","خطای بررسی هش"),MessageBoxButtons.OK,MessageBoxIcon.Warning);}
         }
         void OpenUrl(string url){try{Process.Start(new ProcessStartInfo(url){UseShellExecute=true});}catch(Exception ex){MessageBox.Show(this,ex.Message);}}
         void InitializeRtss()
@@ -1470,6 +1505,7 @@ namespace PacePilot
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("Dashboard")))throw new Exception("English navigation");
             if(!GameDiscovery.SelfTest())throw new Exception("Game discovery parser");
             if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
+            if(!ReleaseTrust.SelfTest())throw new Exception("SHA-256 release-integrity implementation");
             if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
             if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
             if(!HardwareFallback.SelfTest())throw new Exception("Windows GPU performance counter fallback");
