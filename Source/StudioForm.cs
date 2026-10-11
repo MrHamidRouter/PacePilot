@@ -228,7 +228,20 @@ namespace PacePilot
             }
             float ty=r.Bottom-target/maximum*r.Height;
             using(Pen refPen=new Pen(Theme.Secondary,1)) { refPen.DashStyle=DashStyle.Dash; g.DrawLine(refPen,r.Left,ty,r.Right,ty); }
-            if(Values.Count<2) return;
+            int validSamples=Values.Count(x=>!float.IsNaN(x)&&x>0);
+            if(validSamples<2)
+            {
+                string msg="WAITING FOR VERIFIED RTSS FRAME DATA";
+                using(Font font=new Font("Segoe UI Semibold",10,FontStyle.Bold))
+                using(Brush brush=new SolidBrush(Theme.Secondary))
+                {
+                    SizeF label=g.MeasureString(msg,font);
+                    g.DrawString(msg,font,brush,
+                        r.Left+Math.Max(0,(r.Width-label.Width)/2),
+                        r.Top+Math.Max(0,(r.Height-label.Height)/2));
+                }
+                return;
+            }
             List<PointF> seq=new List<PointF>();
             float spacing=r.Width/Math.Max(179,Values.Count-1);
             for(int i=0;i<Values.Count;i++)
@@ -242,8 +255,27 @@ namespace PacePilot
         void PaintLine(Graphics g,List<PointF> seq)
         {
             if(seq.Count<2)return;
-            using(Pen glow=new Pen(Color.FromArgb(37,Theme.Graph),6)) g.DrawLines(glow,seq.ToArray());
-            using(Pen pen=new Pen(Theme.Graph,2)) g.DrawLines(pen,seq.ToArray());
+            PointF[] points=seq.ToArray();
+            if(points.Length>=3)
+            {
+                float bottom=Height-22;
+                using(GraphicsPath area=new GraphicsPath())
+                {
+                    area.AddLines(points);
+                    area.AddLine(points[points.Length-1],new PointF(points[points.Length-1].X,bottom));
+                    area.AddLine(new PointF(points[0].X,bottom),points[0]);
+                    area.CloseFigure();
+                    using(LinearGradientBrush shade=new LinearGradientBrush(
+                        new Rectangle(0,0,Math.Max(1,Width),Math.Max(1,Height)),
+                        Color.FromArgb(49,Theme.Graph),Color.FromArgb(0,Theme.Graph),
+                        LinearGradientMode.Vertical))
+                        g.FillPath(shade,area);
+                }
+            }
+            using(Pen glow=new Pen(Color.FromArgb(38,Theme.Graph),7))g.DrawLines(glow,points);
+            using(Pen pen=new Pen(Theme.Graph,2.1f))g.DrawLines(pen,points);
+            using(Brush dot=new SolidBrush(Theme.Graph))
+                g.FillEllipse(dot,points[points.Length-1].X-3,points[points.Length-1].Y-3,6,6);
         }
     }
 
@@ -292,7 +324,7 @@ namespace PacePilot
             ClientSize=new Size(1340,865); MinimumSize=new Size(950,665);
             Font=new Font("Segoe UI",9f); StartPosition=FormStartPosition.CenterScreen;
             AutoScaleMode=AutoScaleMode.Dpi;
-            Text="PacePilot Studio v2.3  |  Mr.HamidRouter";
+            Text="PacePilot Studio v2.4  |  Mr.HamidRouter";
             try { Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { Icon=SystemIcons.Application; }
             currentTarget=String.IsNullOrEmpty(settings.LastTarget)?"Global":settings.LastTarget;
             Build();
@@ -359,8 +391,7 @@ namespace PacePilot
             shell.RowStyles.Add(new RowStyle(SizeType.Percent,100));
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,sideWidth));
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); Controls.Add(shell);
-            side=new Panel(); side.Dock=DockStyle.Fill; side.BackColor=theme.Sidebar;side.AutoScroll=true;
-            side.BackgroundImage=ThemeVisuals.Sidebar(theme);side.BackgroundImageLayout=ImageLayout.Stretch;
+            side=new PremiumSidebar(theme); side.Dock=DockStyle.Fill; side.BackColor=theme.Sidebar;side.AutoScroll=true;
             side.Margin=Padding.Empty; shell.Controls.Add(side,0,0);
             TextAt(side,"◈ PacePilot","◈ PacePilot",20,20,198,40,19,true,theme.Accent);
             TextAt(side,"PRECISION GAMING","ابزار حرفه‌ای گیمینگ",21,59,198,23,8,true,theme.Secondary);
@@ -497,11 +528,7 @@ namespace PacePilot
             for(int i=0;i<keys.Length;i++)
             {
                 int x0=padding+i*(tileW+gap);
-                Panel panel=new Panel();panel.SetBounds(x0,44,tileW,75);panel.BackColor=theme.Sidebar;card.Controls.Add(panel);
-                panel.Paint+=(sender,args)=>
-                {
-                    using(Pen pen=new Pen(theme.Border))args.Graphics.DrawRectangle(pen,0,0,panel.Width-1,panel.Height-1);
-                };
+                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,44,tileW,75);card.Controls.Add(panel);
                 Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,24,8,false,theme.Secondary);
                 Label value=TextAt(panel,"—","—",7,31,tileW-12,36,tileW<98?10:13,true,theme.Accent);
                 dashboardHardware[keys[i]]=value;
@@ -570,12 +597,13 @@ namespace PacePilot
         }
         void MakeHero(int x,int y,int w,int h)
         {
-            ThemeCard c=new ThemeCard(theme);
-            c.SetBounds(x,y,w,h);c.Artwork=ThemeVisuals.Get(theme.Id);
-            c.CropRectangle=ThemeVisuals.Crop(theme.Id,false,c.Artwork);
-            canvas.Controls.Add(c);
-            TextAt(c,"PACEPILOT   /   PRECISION GAMING","PacePilot  |  تجربه روان‌تر بازی",18,9,w-36,32,15,true,theme.Accent);
-            TextAt(c,"PERFORMANCE  •  PRECISION  •  CONTROL","عملکرد بهینه • کنترل دقیق • تجربه حرفه‌ای",19,41,w-39,25,10,true,theme.Ink);
+            PremiumHero c=new PremiumHero(theme);
+            c.SetBounds(x,y,w,h);canvas.Controls.Add(c);
+            TextAt(c,"PACEPILOT   /   FRAME CONTROL","PacePilot  |  کنترل حرفه‌ای فریم",22,17,Math.Max(250,w*2/3),37,18,true,theme.Ink);
+            TextAt(c,"PRECISION LIMITER     ·     VERIFIED LIVE TELEMETRY",
+                "محدودسازی دقیق فریم   •   اطلاعات واقعی و زنده",
+                23,55,Math.Max(250,w*2/3),28,10,true,theme.Secondary);
+            TextAt(c,"●  RTSS-POWERED","●  مبتنی بر RTSS",23,88,190,20,8,true,theme.Accent);
         }
         void MakeTarget(int x,int y,int w,int h)
         {
@@ -639,7 +667,7 @@ namespace PacePilot
             {
                 int cx=pad+(horizontal?i*(itemW+6):(i%2)*(itemW+7));
                 int cy=39+(horizontal?0:(i/2)*(itemH+4));
-                Panel sub=new Panel();sub.SetBounds(cx,cy,itemW,itemH);sub.BackColor=theme.Sidebar;c.Controls.Add(sub);
+                Panel sub=new PremiumMetricPanel(theme);sub.SetBounds(cx,cy,itemW,itemH);c.Controls.Add(sub);
                 TextAt(sub,ens[i],fas[i],8,3,Math.Max(1,itemW-14),19,8,false,theme.Secondary);
                 Label val=TextAt(sub,"--","--",8,21,Math.Max(1,itemW-14),Math.Max(19,itemH-25),12,true,i==3?theme.Accent:theme.Ink);
                 if(i==0)liveValue=val; if(i==1)frameValue=val;if(i==2)hzValue=val;if(i==3)rtssValue=val;
@@ -984,7 +1012,9 @@ namespace PacePilot
         }
         void DrawSettings(int x,int w)
         {
-            Header(x,w,"Personalize PacePilot","شخصی‌سازی PacePilot","Choose a visual experience that fits your setup.","نمای گرافیکی مورد علاقه‌تان را انتخاب کنید.");
+            Header(x,w,"Personalize PacePilot","شخصی‌سازی PacePilot",
+                "Six native visual systems. All cards, graphs and controls remain interactive.",
+                "شش پوسته گرافیکی واقعی؛ همه کارت‌ها، نمودارها و دکمه‌ها تعاملی هستند.");
             StudioCard c=Card("THEME GALLERY","گالری پوسته‌ها",x,101,w,433);
             int itemW=(w-63)/3;
             for(int i=0;i<6;i++)
@@ -993,9 +1023,8 @@ namespace PacePilot
                 Panel tile=new Panel();tile.SetBounds(px,py,itemW,174);
                 tile.BackColor=theme.Id==th.Id?theme.Accent:theme.Border;
                 tile.Cursor=Cursors.Hand;c.Controls.Add(tile);
-                PictureBox picture=new PictureBox();picture.SetBounds(3,3,itemW-6,135);
-                picture.Image=ThemeVisuals.Get(th.Id);picture.SizeMode=PictureBoxSizeMode.Zoom;
-                picture.BackColor=th.Panel;picture.Cursor=Cursors.Hand;tile.Controls.Add(picture);
+                PremiumThemePreview picture=new PremiumThemePreview(th);picture.SetBounds(3,3,itemW-6,135);
+                picture.BackColor=th.Bg;picture.Cursor=Cursors.Hand;tile.Controls.Add(picture);
                 Label name=new Label();name.Text=th.Display;name.SetBounds(3,141,itemW-6,25);
                 name.ForeColor=theme.Id==th.Id?theme.AccentInk:theme.Ink;
                 name.Font=new Font("Segoe UI",9f,FontStyle.Bold);
@@ -1325,6 +1354,14 @@ namespace PacePilot
             if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
             if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
             if(!RamReadiness.SelfTest()||!FrameActivityBar.SelfTest())throw new Exception("RAM readiness or real frametime visual");
+            // Native vector graphics should always render at scale without needing JPG artwork.
+            using(PremiumHero hero=new PremiumHero(StudioTheme.All[0]))
+            using(PremiumThemePreview preview=new PremiumThemePreview(StudioTheme.All[0]))
+            {
+                hero.Size=new Size(550,110);preview.Size=new Size(230,130);
+                using(Bitmap frame=new Bitmap(550,110))hero.DrawToBitmap(frame,new Rectangle(0,0,550,110));
+                using(Bitmap tile=new Bitmap(230,130))preview.DrawToBitmap(tile,new Rectangle(0,0,230,130));
+            }
             if(!Guard.IsProtected("TslGame.exe") || Guard.IsProtected("Cyberpunk2077.exe") ||
                !Guard.IsLauncherHelper("UnrealCEFSubProcess_3071.exe") ||
                Guard.ShouldBlock("Cyberpunk2077.exe",Guard.Check("Cyberpunk2077.exe")))

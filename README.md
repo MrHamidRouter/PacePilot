@@ -131,3 +131,9 @@ GPU / VRM telemetry still depends on available HWiNFO64 shared-memory sensors. M
 
 اطلاعات GPU و VRM از حسگرهای واقعی HWiNFO64، در صورت موجود بودن، گرفته می‌شود؛ داده ناموجود با «—» نمایش داده می‌شود.
 
+
+## v2.4 — Native premium UI rendering (no screenshot wallpaper)
+
+PacePilot no longer stretches or crops the design mockup screenshots behind its Windows controls. The six selectable looks — Neon Teal, Windows Blue, Cyber Purple, Racing Red, Esports Lime and Graphite Gold — are now drawn with native scalable gradients, themed sidebars, rounded metric tiles, and a vector hero. The theme gallery previews actual visual primitives rather than thumbnails of concept screenshots. The real RTSS frame-time graph includes a measured-only fill and an explicit **Waiting for verified RTSS frame data** state when there are no rendering samples. FPS controls, game scanning, OSD hotkey, hardware sensors, safe pre-game RAM check and update detection remain in the same EXE.
+
+**Scope:** This is a practical native visual redesign, not a 1:1 raster recreation of the original concept images. Windows CI verifies build/UI controls; live gameplay and display quality still need on-device checks.
