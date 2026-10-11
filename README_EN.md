@@ -77,3 +77,9 @@ GPU / VRM telemetry still depends on available HWiNFO64 shared-memory sensors. M
 Six selectable skins now use native scalable graphics rather than low-resolution concept screenshot crops: gradient sidebar, custom vector hero, rounded metrics, custom buttons and live theme previews. The real-only frametime chart explains when RTSS has no game rendering samples. Existing RTSS limiting, OSD hotkey, game library, CPU/GPU monitoring, safe RAM readiness and GitHub update checks remain intact.
 
 The interface is a native implementation inspired by the approved designs, not a pixel-perfect bitmap conversion. Real-game UI and RTSS hook compatibility should be validated on Windows.
+
+## v2.4.1 — real hardware sensor fallbacks
+
+The six-theme UI is unchanged. PacePilot reads **HWiNFO64 Shared Memory** first. If not available, it asynchronously checks LibreHardwareMonitor/OpenHardwareMonitor WMI providers and Windows GPU utilization/adapter-memory counters. It never invents unavailable readings. Windows counters typically cannot report GPU temperature, VRM temperature, board power or core clocks; those require supported hardware sensors. Some motherboards have no VRM temperature sensor at all.
+
+Click any empty GPU/VRAM/VRM tile for provider diagnostics and setup steps. For HWiNFO64, open Sensors-only and enable **Shared Memory Support** in *main* settings (it may turn off after 12 hours on the free tier). Alternatively run LibreHardwareMonitor.
