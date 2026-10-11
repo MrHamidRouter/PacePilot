@@ -523,9 +523,11 @@ namespace PacePilot
             top+=221;
             MakeFrameActivity(x,top,w,112);
             top+=124;
-            int sensorColumns=w<620?3:(w<1140?5:9);
+            // Avoid nine tiny single-line cards on high-resolution desktops.
+            // A measured 2-5 column grid favors legibility over screenshot-like density.
+            int sensorColumns=w<760?2:(w<1030?3:(w<1390?4:5));
             int sensorRows=(9+sensorColumns-1)/sensorColumns;
-            int sensorHeight=54+sensorRows*99;
+            int sensorHeight=54+sensorRows*128;
             MakeHardwareStrip(x,top,w,sensorHeight);
             top+=sensorHeight+12;
             MakeOptions(x,top,w,160);
@@ -552,16 +554,16 @@ namespace PacePilot
             string[] keys={"CPU","CTEMP","GPU","VRAM","RAM","PWR","TEMP","GVRM","VRM"};
             string[] en={"CPU Usage","CPU Temp","GPU Load","VRAM","RAM","GPU Power","GPU Temp","GPU VRM Temp","Board VRM Temp"};
             string[] fa={"درگیری CPU","دمای CPU","گرافیک","حافظه گرافیک","رم","توان GPU","دمای GPU","دمای VRM گرافیک","دمای VRM مادربرد"};
-            int padding=11,gap=5,columns=w<620?3:(w<1140?5:9);
-            int tileW=Math.Max(62,(w-2*padding-gap*(columns-1))/columns);
+            int padding=13,gap=10,columns=w<760?2:(w<1030?3:(w<1390?4:5));
+            int tileW=Math.Max(110,(w-2*padding-gap*(columns-1))/columns);
             for(int i=0;i<keys.Length;i++)
             {
                 int x0=padding+(i%columns)*(tileW+gap);
-                int y0=44+(i/columns)*99;
-                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,y0,tileW,94);card.Controls.Add(panel);
-                Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,23,8,false,theme.Secondary);
-                Label value=TextAt(panel,"—","—",7,28,tileW-12,34,tileW<98?10:13,true,theme.Accent);
-                Label caption=TextAt(panel,"Identifying hardware…","در حال شناسایی قطعه…",7,63,tileW-12,23,7,false,theme.Secondary);
+                int y0=44+(i/columns)*128;
+                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,y0,tileW,117);card.Controls.Add(panel);
+                Label name=TextAt(panel,en[i],fa[i],13,9,tileW-26,24,10,true,theme.Secondary);
+                Label value=TextAt(panel,"—","—",13,34,tileW-26,39,tileW<155?15:19,true,theme.Accent);
+                Label caption=TextAt(panel,"Identifying hardware…","در حال شناسایی قطعه…",13,79,tileW-26,27,9,false,theme.Secondary);
                 hardwareCaptions[keys[i]]=caption;
                 hardwareTooltips.SetToolTip(panel,caption.Text);
                 if(keys[i]!="CPU"&&keys[i]!="RAM")
