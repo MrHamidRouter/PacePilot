@@ -194,11 +194,25 @@ namespace PacePilot
                         string[] names=cat.GetInstanceNames();
                         foreach(string instance in names.Take(4))
                         {
-                            // Dedicated Limit is the adapter budget; not necessarily physical VRAM size.
+                            // Dedicated Usage and Dedicated Limit are Windows adapter counters.
+                            // The latter is an OS budget; do not call it physical VRAM capacity.
                             if(!next.VramUsedGb.HasValue)
                             {
-                                using(PerformanceCounter used=new PerformanceCounter("GPU Adapter Memory","Dedicated Usage",instance,true))
-                                    next.VramUsedGb=Choose(next.VramUsedGb,used.NextValue()/1073741824.0,0,256);
+                                try
+                                {
+                                    using(PerformanceCounter used=new PerformanceCounter("GPU Adapter Memory","Dedicated Usage",instance,true))
+                                        next.VramUsedGb=Choose(next.VramUsedGb,used.NextValue()/1073741824.0,0,256);
+                                }
+                                catch(InvalidOperationException){}
+                            }
+                            if(!next.VramTotalGb.HasValue)
+                            {
+                                try
+                                {
+                                    using(PerformanceCounter limit=new PerformanceCounter("GPU Adapter Memory","Dedicated Limit",instance,true))
+                                        next.VramTotalGb=Choose(next.VramTotalGb,limit.NextValue()/1073741824.0,.1,256);
+                                }
+                                catch(InvalidOperationException){}
                             }
                         }
                     }
