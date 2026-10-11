@@ -361,7 +361,6 @@ namespace PacePilot
                         }));
                 }
                 catch(InvalidOperationException){}
-                catch(ObjectDisposedException){}
             });
         }
         void Persist()
