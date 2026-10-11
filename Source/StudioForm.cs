@@ -624,6 +624,7 @@ namespace PacePilot
                 b.FlatAppearance.BorderColor=selected?theme.Accent:theme.Border;
             }
             if(graph!=null)graph.Target=Math.Max(1,val);
+            if(activity!=null&&!activity.IsDisposed)activity.TargetFps=Math.Max(1,val);
             if(apply!=null)apply.Text=L("▶ APPLY "+val+" FPS","▶ اعمال "+val+" فریم");
         }
         void ReadTargetLimit()
@@ -760,6 +761,17 @@ namespace PacePilot
             if(liveValue!=null&&!liveValue.IsDisposed)liveValue.Text=sample.Valid?sample.Fps.ToString("0.0"):"--";
             if(frameValue!=null&&!frameValue.IsDisposed)frameValue.Text=sample.Valid?sample.FrameMs.ToString("0.00")+" ms":"--";
             if(graph!=null&&!graph.IsDisposed)graph.Push(sample.Valid?sample.FrameMs:float.NaN);
+            if(activity!=null&&!activity.IsDisposed)activity.Push(sample.Valid?sample.FrameMs:float.NaN);
+            if(frameFeedStatus!=null&&!frameFeedStatus.IsDisposed)
+            {
+                frameFeedStatus.Text=sample.Valid?
+                    L("LIVE  •  "+sample.Fps.ToString("0")+" FPS","زنده • "+sample.Fps.ToString("0")+" فریم") :
+                    (Guard.IsLauncherHelper(currentTarget)?
+                        L("SELECT THE REAL GAME EXE","فایل اصلی بازی را انتخاب کنید"):
+                        L("AWAITING RTSS GAME HOOK","در انتظار اتصال RTSS به بازی"));
+                frameFeedStatus.ForeColor=sample.Valid?theme.Accent:Color.Orange;
+            }
+            UpdateHardwareStrip();
         }
         static string SensorText(double? value,string unit){return value.HasValue?value.Value.ToString("0.0")+" "+unit:"—";}
         void RefreshRtssStatus()
@@ -884,7 +896,7 @@ namespace PacePilot
                         OpenUrl(release.Url);
                 }
                 else if(manual)
-                    MessageBox.Show(this,L("PacePilot 2.1.1 is up to date.","PacePilot نسخه ۲.۱.۰ به‌روز است."),
+                    MessageBox.Show(this,L("PacePilot 2.3.0 is up to date.","PacePilot نسخه ۲.۳.۰ به‌روز است."),
                         L("Update check","بررسی بروزرسانی"),MessageBoxButtons.OK,MessageBoxIcon.Information);
             };
             worker.RunWorkerAsync();
@@ -1066,7 +1078,7 @@ namespace PacePilot
         void DrawAbout(int x,int w)
         {
             Header(x,w,"About PacePilot","درباره PacePilot","Precision FPS management for Windows gaming.","مدیریت دقیق نرخ فریم برای بازی‌های ویندوز.");
-            StudioCard c=Card("PACEPILOT STUDIO 2.0","PacePilot Studio نسخه ۲",x,101,w,367);
+            StudioCard c=Card("PACEPILOT STUDIO 2.3","PacePilot Studio نسخه ۲.۳",x,101,w,367);
             TextAt(c,"Developer: Mr.HamidRouter","توسعه‌دهنده: Mr.HamidRouter",22,62,w-44,35,15,true,theme.Accent);
             TextAt(c,"Bilingual interface  |  Custom themes  |  RTSS integration","رابط دو‌زبانه | طرح‌های اختصاصی | یکپارچگی با RTSS",22,110,w-44,40,11,false);
             TextAt(c,"This is an independent, MIT-licensed RTSS frontend. It is not affiliated with FramePacer, RTSS or Guru3D. NVIDIA Reflex, DLSS frame generation, and a proprietary frame-injection engine are not implemented. RTSS installation requires consent and may need administrator approval.",
@@ -1253,6 +1265,7 @@ namespace PacePilot
             if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
             if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
             if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
+            if(!RamReadiness.SelfTest()||!FrameActivityBar.SelfTest())throw new Exception("RAM readiness or real frametime visual");
             if(!Guard.IsProtected("TslGame.exe") || Guard.IsProtected("Cyberpunk2077.exe") ||
                !Guard.IsLauncherHelper("UnrealCEFSubProcess_3071.exe") ||
                Guard.ShouldBlock("Cyberpunk2077.exe",Guard.Check("Cyberpunk2077.exe")))
