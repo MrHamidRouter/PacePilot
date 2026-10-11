@@ -68,18 +68,12 @@ namespace PacePilot
             HardwareSensorSnapshot next=new HardwareSensorSnapshot();
             try
             {
-                // The WMI service is exposed only while the monitor itself runs.
-                int sensors=ReadWmi(@"root\LibreHardwareMonitor",next);
-                if(sensors==0)sensors=ReadWmi(@"root\OpenHardwareMonitor",next);
-                next.ObservedSensors=sensors;
-                string origin=sensors>0?(next.Source):"";
+                // Secondary Windows-native counters only. No WMI monitor namespaces.
+                // The in-process sensor engine supplies all supported GPU/VRM temperatures.
                 WindowsCounters(next);
-                if(sensors>0)
-                    next.Source=origin;
-                else if(next.GpuLoad.HasValue||next.VramUsedGb.HasValue)
-                    next.Source="Windows GPU performance counters (temperature/power needs HWiNFO or LibreHardwareMonitor)";
-                else
-                    next.Source="No sensor provider: enable HWiNFO Shared Memory Support, or run LibreHardwareMonitor";
+                next.Source=next.GpuLoad.HasValue||next.VramUsedGb.HasValue?
+                    "Built-in Windows GPU driver performance counters":
+                    "Windows GPU counters are not exposed by this driver";
             }
             catch(Exception e)
             {
