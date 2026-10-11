@@ -68,6 +68,6 @@ jobs:
             gh release upload $tag $package --clobber --repo $repo
           } else {
             Write-Host "Creating first release $tag"
-            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.3.0' --notes 'PacePilot Studio 2.3.0: RTSS in-game OSD and live frametime bar, Alt+Shift+O toggle, real CPU/RAM sampling, target-specific protected-game compatibility checks. RTSS-hook compatibility varies by game; no anti-cheat bypass.' --latest
+            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.3.0' --notes 'PacePilot Studio 2.3.0: six premium artwork themes with owner-drawn rounded controls, real RTSS frametime activity with missing-feed diagnosis, separate live hardware cards and safe opt-in pre-game RAM inspection. Preserves prior RTSS limiter, game library, OSD and update checks; actual game hook compatibility must be tested.' --latest
           }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publish failed' }
