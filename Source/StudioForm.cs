@@ -93,11 +93,35 @@ namespace PacePilot
     {
         public StudioTheme Theme;
         public StudioCard(StudioTheme t) { Theme=t; DoubleBuffered=true; BackColor=t.Panel; Margin=Padding.Empty; }
+        public static GraphicsPath RoundRect(Rectangle rect,int radius)
+        {
+            GraphicsPath path=new GraphicsPath();
+            int r=Math.Min(radius*2,Math.Min(rect.Width,rect.Height));
+            if(r<=0){path.AddRectangle(rect);return path;}
+            path.AddArc(rect.X,rect.Y,r,r,180,90);
+            path.AddArc(rect.Right-r,rect.Y,r,r,270,90);
+            path.AddArc(rect.Right-r,rect.Bottom-r,r,r,0,90);
+            path.AddArc(rect.X,rect.Bottom-r,r,r,90,90);
+            path.CloseFigure();
+            return path;
+        }
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if(Width<8||Height<8)return;
+            using(GraphicsPath path=RoundRect(new Rectangle(0,0,Width,Height),12))
+            {
+                Region old=Region;Region=new Region(path);if(old!=null)old.Dispose();
+            }
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
             e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
-            using(Pen p=new Pen(Theme.Border)) e.Graphics.DrawRectangle(p,0,0,Width-1,Height-1);
+            if(Width<3||Height<3)return;
+            using(GraphicsPath path=RoundRect(new Rectangle(0,0,Width-1,Height-1),12))
+            using(Pen border=new Pen(Theme.Border,1.15f))
+                e.Graphics.DrawPath(border,path);
         }
     }
     public sealed class ThemeCard : StudioCard
@@ -243,6 +267,16 @@ namespace PacePilot
             b.FlatStyle=FlatStyle.Flat; b.FlatAppearance.BorderColor=prominent?theme.Accent:theme.Border;
             b.FlatAppearance.BorderSize=1; b.Cursor=Cursors.Hand;
             b.Font=new Font("Segoe UI Semibold",9.5f,FontStyle.Bold);
+            b.FlatAppearance.MouseOverBackColor=prominent?ControlPaint.Light(theme.Accent,.14f):ControlPaint.Light(theme.Sidebar,.16f);
+            b.FlatAppearance.MouseDownBackColor=prominent?ControlPaint.Dark(theme.Accent,.16f):theme.Panel;
+            b.Resize+=(sender,e)=>
+            {
+                if(b.Width<8||b.Height<8)return;
+                using(GraphicsPath rounded=StudioCard.RoundRect(new Rectangle(0,0,b.Width,b.Height),9))
+                {
+                    Region oldRegion=b.Region;b.Region=new Region(rounded);if(oldRegion!=null)oldRegion.Dispose();
+                }
+            };
             b.RightToLeft=Fa?RightToLeft.Yes:RightToLeft.No;
             if(click!=null)b.Click+=click; p.Controls.Add(b);return b;
         }
