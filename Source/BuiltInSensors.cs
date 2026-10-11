@@ -18,6 +18,7 @@ namespace PacePilot
     {
         public double? CpuTemp,CpuClock,GpuLoad,GpuTemp,GpuClock,GpuPower,VramUsed,VramTotal,GpuVrmTemp,VrmTemp;
         public int Count;
+        public readonly List<string> TemperatureSources=new List<string>();
         public string Status="Sensor engine not yet initialized";
         public NativeSensorValues Copy(){return (NativeSensorValues)MemberwiseClone();}
     }
@@ -34,6 +35,19 @@ namespace PacePilot
         static DateTime nextOpen=DateTime.MinValue;
         public static string Status{get{lock(Sync)return cached.Status;}}
         public static int ReadingCount{get{lock(Sync)return cached.Count;}}
+        // Show actual sensor names when GPU / VRM is unsupported; never substitute guessed temperatures.
+        public static string TemperatureSensorReport
+        {
+            get
+            {
+                lock(Sync)
+                {
+                    if(cached.TemperatureSources.Count==0)return "(no temperature sensors published)";
+                    return String.Join("\n",cached.TemperatureSources.Take(24).ToArray())+
+                        (cached.TemperatureSources.Count>24?"\n...":"");
+                }
+            }
+        }
         public static string LibraryPath{get{return Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"LibreHardwareMonitorLib.dll");}}
         static object Property(object instance,string name)
         {
@@ -86,6 +100,8 @@ namespace PacePilot
             bool cpu=Has(device,"Cpu");
             bool motherboard=Has(device,"Motherboard","SuperIO","EmbeddedController","Lpc");
             double v=val.Value;
+            if(type=="Temperature" && target.TemperatureSources.Count<60)
+                target.TemperatureSources.Add(device+" | "+name+" = "+v.ToString("0.#",CultureInfo.InvariantCulture)+" C");
             if(gpu)
             {
                 if(type=="Load" && SensorEquals(name,"GPU Core","GPU 3D","GPU Total","GPU Core Load"))
@@ -112,7 +128,8 @@ namespace PacePilot
                 if(type=="Clock" && Has(name,"CPU Core #1","Core #1","Core 0","Core (Effective)"))
                     target.CpuClock=Take(target.CpuClock,v/1000.0,.1,9);
             }
-            if(type=="Temperature" && Has(name,"VRM","VR MOS","MOSFET","Vcore MOS","VR VDDC","GPU VRM"))
+            if(type=="Temperature" && Has(name,"VRM","VR MOS","MOSFET","Vcore MOS","VR VDDC",
+                                          "VR VCC","VDDC VR","VDDCR VR","GPU VRM","GPU VR"))
             {
                 if(gpu) target.GpuVrmTemp=Take(target.GpuVrmTemp,v,0,150);
                 else if(motherboard)target.VrmTemp=Take(target.VrmTemp,v,0,150);
@@ -253,6 +270,8 @@ namespace PacePilot
             catch{bundled=false;}
             return s.GpuLoad==91 && s.GpuTemp==72 && s.VramUsed==4 && s.GpuPower==115 &&
                 s.VrmTemp==69 && s.GpuVrmTemp==84 && s.CpuTemp==64 &&
+                s.TemperatureSources.Any(t=>t.Contains("GPU VRM Temperature")) &&
+                s.TemperatureSources.Any(t=>t.Contains("CPU Package")) &&
                 Priority("GpuAmd")<Priority("GpuIntel") && bundled;
         }
     }

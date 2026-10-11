@@ -86,7 +86,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $repo = $env:GITHUB_REPOSITORY
-          $tag = 'v2.5.1'
+          $tag = 'v2.5.2'
           $package = 'dist/PacePilot-Windows-x64.zip'
           if (-not (Test-Path $package)) { throw 'Release ZIP missing' }
           # Listing releases succeeds with an empty array on first publication.
@@ -100,6 +100,6 @@ jobs:
             gh release upload $tag $package --clobber --repo $repo
           } else {
             Write-Host "Creating first release $tag"
-            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.5.1' --notes 'PacePilot 2.5.1 fixes incorrect stale version 2.3.0 in update dialogs. The installed version is obtained from the running EXE, and latest official GitHub release is displayed separately. Dedicated GPU VRM and motherboard VRM temperature sensor readings are shown as distinct telemetry tiles and OSD values, where available. RTSS, built-in LibreHardwareMonitor sensors, six visual themes, game profiles and other features remain intact.' --latest
+            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.5.2' --notes 'PacePilot Studio 2.5.2 adds actual CPU Package Temperature to the main dashboard alongside CPU usage, GPU, GPU temperature, VRAM, RAM, GPU power, GPU VRM and motherboard VRM. Nine hardware cards automatically wrap on narrower windows. The native sensor engine recognizes more VRM sensor aliases and provides a diagnostic list of real published temperature sensor names when no VRM value is available. All existing RTSS, frame activity, game scan and premium themes remain unchanged. Hardware without VRM sensors cannot report VRM temperatures.' --latest
           }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publish failed' }

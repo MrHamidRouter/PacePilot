@@ -498,8 +498,11 @@ namespace PacePilot
             top+=221;
             MakeFrameActivity(x,top,w,112);
             top+=124;
-            MakeHardwareStrip(x,top,w,130);
-            top+=142;
+            int sensorColumns=w<620?3:(w<1140?5:9);
+            int sensorRows=(9+sensorColumns-1)/sensorColumns;
+            int sensorHeight=54+sensorRows*80;
+            MakeHardwareStrip(x,top,w,sensorHeight);
+            top+=sensorHeight+12;
             MakeOptions(x,top,w,160);
             top+=174;
             statusLabel=TextAt(canvas,"Ready. Choose a supported game. FPS/frametime require an active RTSS render feed.",
@@ -521,14 +524,16 @@ namespace PacePilot
         void MakeHardwareStrip(int x,int y,int w,int h)
         {
             StudioCard card=Card("HARDWARE TELEMETRY  •  SYSTEM SENSORS","سنسورهای سخت‌افزاری • پایش زنده",x,y,w,h);
-            string[] keys={"CPU","GPU","VRAM","RAM","PWR","TEMP","GVRM","VRM"};
-            string[] en={"CPU","GPU Load","VRAM","RAM","GPU Power","GPU Temp","GPU VRM Temp","Board VRM Temp"};
-            string[] fa={"پردازنده","گرافیک","حافظه گرافیک","رم","توان GPU","دمای GPU","دمای VRM گرافیک","دمای VRM مادربرد"};
-            int padding=11,gap=5,tileW=(w-2*padding-gap*7)/8;
+            string[] keys={"CPU","CTEMP","GPU","VRAM","RAM","PWR","TEMP","GVRM","VRM"};
+            string[] en={"CPU Usage","CPU Temp","GPU Load","VRAM","RAM","GPU Power","GPU Temp","GPU VRM Temp","Board VRM Temp"};
+            string[] fa={"درگیری CPU","دمای CPU","گرافیک","حافظه گرافیک","رم","توان GPU","دمای GPU","دمای VRM گرافیک","دمای VRM مادربرد"};
+            int padding=11,gap=5,columns=w<620?3:(w<1140?5:9);
+            int tileW=Math.Max(62,(w-2*padding-gap*(columns-1))/columns);
             for(int i=0;i<keys.Length;i++)
             {
-                int x0=padding+i*(tileW+gap);
-                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,44,tileW,75);card.Controls.Add(panel);
+                int x0=padding+(i%columns)*(tileW+gap);
+                int y0=44+(i/columns)*80;
+                Panel panel=new PremiumMetricPanel(theme);panel.SetBounds(x0,y0,tileW,75);card.Controls.Add(panel);
                 Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,24,8,false,theme.Secondary);
                 Label value=TextAt(panel,"—","—",7,31,tileW-12,36,tileW<98?10:13,true,theme.Accent);
                 if(keys[i]!="CPU"&&keys[i]!="RAM")
@@ -547,7 +552,9 @@ namespace PacePilot
         {
             string info=L("Built-in sensor engine: ","موتور داخلی حسگرها: ")+BuiltInSensors.Status+"\n"+
                 L("Detected sensor entries: ","تعداد حسگرهای پیدا‌شده: ")+BuiltInSensors.ReadingCount.ToString()+"\n"+
-                L("Windows GPU counters: ","شمارنده‌های گرافیک ویندوز: ")+HardwareFallback.Status+"\n\n"+
+                L("Windows GPU counters: ","شمارنده‌های گرافیک ویندوز: ")+HardwareFallback.Status+"\n"+
+                L("Actual temperature sensors detected:","حسگرهای دمای واقعی شناسایی‌شده:")+"\n"+
+                BuiltInSensors.TemperatureSensorReport+"\n\n"+
                 L("PacePilot collects sensors by itself. No HWiNFO, MSI Afterburner or LibreHardwareMonitor installation or running process is required. If a sensor is blank, the device may not expose it, or Windows may block the sensor driver. Restart PacePilot as Administrator if needed; never disable Windows security features to force sensor access. VRM temperature is only available on compatible boards.",
                   "PacePilot خودش اطلاعات حسگرها را می‌خواند و نصب یا اجرای HWiNFO، MSI Afterburner یا LibreHardwareMonitor لازم نیست. اگر سنسوری خالی باشد، ممکن است سخت‌افزار آن را ارائه نکند یا ویندوز دسترسی به درایور حسگر را محدود کرده باشد. در صورت نیاز برنامه را با Administrator اجرا کنید؛ برای دسترسی سنسورها امنیت ویندوز را خاموش نکنید. دمای VRM تنها روی مادربردهای سازگار در دسترس است.");
             MessageBox.Show(this,info,L("Hardware sensor diagnostics","عیب‌یابی سنسورهای سخت‌افزار"),MessageBoxButtons.OK,MessageBoxIcon.Information);
@@ -557,9 +564,10 @@ namespace PacePilot
             string ram=lastSystem.RamTotalGb>0?lastSystem.RamUsedGb.ToString("0.0")+"/"+lastSystem.RamTotalGb.ToString("0.0")+" GB":"—";
             string vram=lastSystem.VramUsedGb.HasValue?
                 lastSystem.VramUsedGb.Value.ToString("0.0")+"/"+(lastSystem.VramTotalGb.HasValue?lastSystem.VramTotalGb.Value.ToString("0.0"):"?")+" GB":"—";
-            string[] keys={"CPU","GPU","VRAM","RAM","PWR","TEMP","GVRM","VRM"};
+            string[] keys={"CPU","CTEMP","GPU","VRAM","RAM","PWR","TEMP","GVRM","VRM"};
             string[] values={
                 lastSystem.CpuPercent.HasValue?lastSystem.CpuPercent.Value.ToString("0")+"%":"—",
+                SensorText(lastSystem.CpuTempC,"°C"),
                 SensorText(lastSystem.GpuLoad,"%"),vram,ram,SensorText(lastSystem.GpuPowerW,"W"),
                 SensorText(lastSystem.GpuTempC,"°C"),SensorText(lastSystem.GpuVrmTempC,"°C"),SensorText(lastSystem.VrmTempC,"°C")
             };
@@ -1365,7 +1373,7 @@ namespace PacePilot
                     Size=size;PerformLayout();Application.DoEvents();FitCanvas();
                     if(shell.GetControlFromPosition(0,0).Right>viewport.Left)throw new Exception("Overlap: "+t.Id);
                     if(canvas.Controls.Count<4||fpsBox==null||targetBox==null||graph==null)throw new Exception("Missing core controls: "+t.Id);
-                    if(activity==null||dashboardHardware.Count!=8||ramReadyValue==null||frameFeedStatus==null)
+                    if(activity==null||dashboardHardware.Count!=9||ramReadyValue==null||frameFeedStatus==null)
                         throw new Exception("Missing RAM readiness, hardware, or RTSS activity widgets: "+t.Id);
                     if(apply.Right>apply.Parent.Width||disable.Right>disable.Parent.Width||fpsBox.Right>fpsBox.Parent.Width)throw new Exception("Clipped FPS controls: "+t.Id);
                 }
@@ -1378,6 +1386,12 @@ namespace PacePilot
                 currentPage="dashboard";
             }
             settings.LanguageCode="fa";theme=StudioTheme.All[0];Build();
+            lastSystem.CpuTempC=64;
+            UpdateHardwareStrip();
+            if(!dashboardHardware.ContainsKey("CTEMP") ||
+               dashboardHardware["CTEMP"].Text!=SensorText(64,"°C"))
+                throw new Exception("CPU temperature tile is missing or not connected to live sensor data");
+            lastSystem.CpuTempC=null;
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("داشبورد")))throw new Exception("Persian navigation");
             settings.LanguageCode="en";Build();
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("Dashboard")))throw new Exception("English navigation");
