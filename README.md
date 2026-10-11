@@ -1,4 +1,16 @@
-# PacePilot Studio 2.1 | نرم‌افزار کنترل فریم ویندوز
+# PacePilot Studio 2.2 | نرم‌افزار کنترل فریم ویندوز
+
+### Performance HUD / پایش و نمایش روی بازی (v2.2)
+
+**One app • six artwork themes • RTSS FPS controls • in-game OSD • CPU/RAM/GPU cards**
+
+Inside **Performance HUD / پایش و نمایش بازی**, use **Alt + Shift + O** to show or hide PacePilot's native RTSS OSD. FPS and the 20-block frametime bar use real RTSS measurements. CPU and RAM are read using native Windows counters. For GPU load, GPU temperature, core clock, board power, VRAM and motherboard VRM temperatures, enable **Shared Memory Support** under HWiNFO64 Sensors; unsupported readings remain **—**, never fabricated. Overlay visibility depends on RTSS/game compatibility.
+
+Anti-cheat checks now depend on the selected game executable instead of merely the existence of unrelated background anti-cheat services. **PUBG/BattlEye, Valorant and other protected games remain blocked:** PacePilot does not bypass game anti-cheat policies, and an in-game limiter is recommended for such titles.
+
+این نسخه شامل کارت‌های جداگانه CPU، RAM، GPU، دما، کلاک، توان، VRAM و VRM است؛ داده‌های گرافیکی از HWiNFO64 (در صورت فعال بودن Shared Memory Support) خوانده می‌شوند. برای روشن و خاموش‌کردن OSD از **Alt + Shift + O** استفاده کنید. محدودیت ضدتقلبِ بازی‌های محافظت‌شده همچنان رعایت می‌شود و بازبودن سرویس یک بازی دیگر به‌تنهایی سایر بازی‌ها را مسدود نمی‌کند.
+
+Windows CI checks compilation and UI self-tests, not real in-game frame limiting; on-machine validation remains necessary.
 
 ### Windows Administrator / اجرای مدیر (v2.1.1)
 

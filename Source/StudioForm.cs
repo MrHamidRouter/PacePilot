@@ -93,11 +93,35 @@ namespace PacePilot
     {
         public StudioTheme Theme;
         public StudioCard(StudioTheme t) { Theme=t; DoubleBuffered=true; BackColor=t.Panel; Margin=Padding.Empty; }
+        public static GraphicsPath RoundRect(Rectangle rect,int radius)
+        {
+            GraphicsPath path=new GraphicsPath();
+            int r=Math.Min(radius*2,Math.Min(rect.Width,rect.Height));
+            if(r<=0){path.AddRectangle(rect);return path;}
+            path.AddArc(rect.X,rect.Y,r,r,180,90);
+            path.AddArc(rect.Right-r,rect.Y,r,r,270,90);
+            path.AddArc(rect.Right-r,rect.Bottom-r,r,r,0,90);
+            path.AddArc(rect.X,rect.Bottom-r,r,r,90,90);
+            path.CloseFigure();
+            return path;
+        }
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if(Width<8||Height<8)return;
+            using(GraphicsPath path=RoundRect(new Rectangle(0,0,Width,Height),12))
+            {
+                Region old=Region;Region=new Region(path);if(old!=null)old.Dispose();
+            }
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
             e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
-            using(Pen p=new Pen(Theme.Border)) e.Graphics.DrawRectangle(p,0,0,Width-1,Height-1);
+            if(Width<3||Height<3)return;
+            using(GraphicsPath path=RoundRect(new Rectangle(0,0,Width-1,Height-1),12))
+            using(Pen border=new Pen(Theme.Border,1.15f))
+                e.Graphics.DrawPath(border,path);
         }
     }
     public sealed class ThemeCard : StudioCard
@@ -171,6 +195,12 @@ namespace PacePilot
         readonly bool testing;
         readonly AppSettings settings;
         readonly RtssControl rtss=new RtssControl();
+        readonly RtssOsdBridge osd=new RtssOsdBridge();
+        readonly SystemSampler sampler=new SystemSampler();
+        SystemSample lastSystem;
+        FrameSample lastFrame;
+        Label cpuMonitorValue,ramMonitorValue,osdMonitorValue;
+        Label cpuTempMonitor,gpuLoadMonitor,gpuTempMonitor,gpuClockMonitor,gpuPowerMonitor,vramMonitor,vrmMonitor,sensorStatusMonitor;
         StudioTheme theme;
         string currentTarget="Global", currentPage="dashboard";
         bool rebuilding=false, finishing=false, prompted=false, installing=false;
@@ -202,7 +232,7 @@ namespace PacePilot
             ClientSize=new Size(1340,865); MinimumSize=new Size(950,665);
             Font=new Font("Segoe UI",9f); StartPosition=FormStartPosition.CenterScreen;
             AutoScaleMode=AutoScaleMode.Dpi;
-            Text="PacePilot Studio v2.1  |  Mr.HamidRouter";
+            Text="PacePilot Studio v2.2  |  Mr.HamidRouter";
             try { Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { Icon=SystemIcons.Application; }
             currentTarget=String.IsNullOrEmpty(settings.LastTarget)?"Global":settings.LastTarget;
             Build();
@@ -237,6 +267,16 @@ namespace PacePilot
             b.FlatStyle=FlatStyle.Flat; b.FlatAppearance.BorderColor=prominent?theme.Accent:theme.Border;
             b.FlatAppearance.BorderSize=1; b.Cursor=Cursors.Hand;
             b.Font=new Font("Segoe UI Semibold",9.5f,FontStyle.Bold);
+            b.FlatAppearance.MouseOverBackColor=prominent?ControlPaint.Light(theme.Accent,.14f):ControlPaint.Light(theme.Sidebar,.16f);
+            b.FlatAppearance.MouseDownBackColor=prominent?ControlPaint.Dark(theme.Accent,.16f):theme.Panel;
+            b.Resize+=(sender,e)=>
+            {
+                if(b.Width<8||b.Height<8)return;
+                using(GraphicsPath rounded=StudioCard.RoundRect(new Rectangle(0,0,b.Width,b.Height),9))
+                {
+                    Region oldRegion=b.Region;b.Region=new Region(rounded);if(oldRegion!=null)oldRegion.Dispose();
+                }
+            };
             b.RightToLeft=Fa?RightToLeft.Yes:RightToLeft.No;
             if(click!=null)b.Click+=click; p.Controls.Add(b);return b;
         }
@@ -270,19 +310,19 @@ namespace PacePilot
             TextAt(side,"UI THEME","پوسته برنامه",20,164,188,20,9,true,theme.Secondary);
             themeBox=SelectBox(side,21,187,193,32,StudioTheme.All.Select(x=>x.Display).ToArray(),Array.FindIndex(StudioTheme.All,x=>x.Id==theme.Id));
             themeBox.SelectedIndexChanged+=(s,e)=>{if(rebuilding||themeBox.SelectedIndex<0)return;settings.ThemeName=StudioTheme.All[themeBox.SelectedIndex].Id; theme=StudioTheme.Find(settings.ThemeName);Persist();Build();};
-            string[] nav={"dashboard","profiles","settings","rtss","logs","about"};
-            string[] en={"Dashboard","Game Library","Appearance & Settings","RTSS & Tools","Diagnostics","About"};
-            string[] fa={"داشبورد","کتابخانه بازی‌ها","ظاهر و تنظیمات","RTSS و ابزارها","گزارش و خطایابی","درباره برنامه"};
-            string[] symbols={"⌂","▣","⚙","◉","≡","ⓘ"};
+            string[] nav={"dashboard","profiles","monitor","settings","rtss","logs","about"};
+            string[] en={"Dashboard","Game Library","Performance HUD","Appearance & Settings","RTSS & Tools","Diagnostics","About"};
+            string[] fa={"داشبورد","کتابخانه بازی‌ها","پایش و نمایش بازی","ظاهر و تنظیمات","RTSS و ابزارها","گزارش و خطایابی","درباره برنامه"};
+            string[] symbols={"⌂","▣","▤","⚙","◉","≡","ⓘ"};
             for(int i=0;i<nav.Length;i++)
             {
                 string page=nav[i]; bool chosen=currentPage==page;
-                Button button=Action(side,symbols[i]+"   "+en[i],symbols[i]+"   "+fa[i],14,242+i*52,205,45,chosen,(s,e)=>{currentPage=page;Build();});
+                Button button=Action(side,symbols[i]+"   "+en[i],symbols[i]+"   "+fa[i],14,231+i*46,205,42,chosen,(s,e)=>{currentPage=page;Build();});
                 button.TextAlign=ContentAlignment.MiddleLeft; button.Padding=new Padding(10,0,0,0);
             }
-            TextAt(side,"Developer:","توسعه‌دهنده:",22,573,194,23,9,false,theme.Secondary);
-            TextAt(side,"Mr.HamidRouter","Mr.HamidRouter",22,596,194,28,11,true,theme.Accent);
-            TextAt(side,"Gaming Performance Utility","ابزار تخصصی عملکرد بازی",22,633,190,25,8,false,theme.Secondary);
+            TextAt(side,"Developer:","توسعه‌دهنده:",22,566,194,23,9,false,theme.Secondary);
+            TextAt(side,"Mr.HamidRouter","Mr.HamidRouter",22,589,194,28,11,true,theme.Accent);
+            TextAt(side,"Gaming Performance Utility","ابزار تخصصی عملکرد بازی",22,627,190,25,8,false,theme.Secondary);
             viewport=new Panel(); viewport.Dock=DockStyle.Fill; viewport.AutoScroll=true;viewport.BackColor=theme.Bg;viewport.Margin=Padding.Empty;
             shell.Controls.Add(viewport,1,0);
             canvas=new Panel(); canvas.Location=Point.Empty;canvas.BackColor=theme.Bg; viewport.Controls.Add(canvas);
@@ -314,6 +354,7 @@ namespace PacePilot
             int w=canvas.Width-38;
             if(currentPage=="dashboard") DrawDashboard(19,w);
             else if(currentPage=="profiles") DrawProfiles(19,w);
+            else if(currentPage=="monitor") DrawMonitor(19,w);
             else if(currentPage=="settings") DrawSettings(19,w);
             else if(currentPage=="rtss") DrawRtss(19,w);
             else if(currentPage=="logs") DrawLogs(19,w);
@@ -515,9 +556,10 @@ namespace PacePilot
             string warning=Guard.Check(currentTarget);
             if(!String.IsNullOrEmpty(warning))
             {
-                bool blocked=warning.Contains("blocklist")||warning.Contains("Anti-cheat process");
+                bool blocked=Guard.ShouldBlock(currentTarget,warning);
                 if(blocked){SetStatus(L("Protected game: no limit applied.","بازی محافظت‌شده: محدودیت اعمال نشد."),false);if(!quiet)MessageBox.Show(this,warning,"PacePilot safety",MessageBoxButtons.OK,MessageBoxIcon.Warning);return;}
-                if(!quiet && MessageBox.Show(this,L("Global mode affects every game, including protected titles. Continue?","محدودیت عمومی می‌تواند روی بازی‌های محافظت‌شده هم اثر بگذارد. ادامه می‌دهید؟"),"PacePilot",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes)return;
+                if(quiet){SetStatus(L("Confirm Global mode in the dashboard before using a hotkey.","برای اعمال حالت عمومی باید ابتدا در داشبورد تأیید کنید."),false);return;}
+                if(MessageBox.Show(this,L("Global limit applies to every compatible game. Proceed?","محدودیت عمومی روی بازی‌های سازگار اعمال می‌شود. ادامه می‌دهید؟"),"PacePilot",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes)return;
             }
             try
             {
@@ -608,10 +650,28 @@ namespace PacePilot
                 catch{}
             }
             FrameSample sample=rtss.IsRunning?LiveFrames.Read(currentTarget):new FrameSample();
+            lastFrame=sample;
+            lastSystem=sampler.Read();
+            HwInfoBridge.Enrich(ref lastSystem);
+            if(cpuTempMonitor!=null&&!cpuTempMonitor.IsDisposed)cpuTempMonitor.Text=SensorText(lastSystem.CpuTempC,"°C");
+            if(gpuLoadMonitor!=null&&!gpuLoadMonitor.IsDisposed)gpuLoadMonitor.Text=SensorText(lastSystem.GpuLoad,"%");
+            if(gpuTempMonitor!=null&&!gpuTempMonitor.IsDisposed)gpuTempMonitor.Text=SensorText(lastSystem.GpuTempC,"°C");
+            if(gpuClockMonitor!=null&&!gpuClockMonitor.IsDisposed)gpuClockMonitor.Text=SensorText(lastSystem.GpuClockMhz,"MHz");
+            if(gpuPowerMonitor!=null&&!gpuPowerMonitor.IsDisposed)gpuPowerMonitor.Text=SensorText(lastSystem.GpuPowerW,"W");
+            if(vramMonitor!=null&&!vramMonitor.IsDisposed)vramMonitor.Text=lastSystem.VramUsedGb.HasValue?
+                lastSystem.VramUsedGb.Value.ToString("0.0")+" / "+(lastSystem.VramTotalGb.HasValue?lastSystem.VramTotalGb.Value.ToString("0.0"):"?")+" GB":"—";
+            if(vrmMonitor!=null&&!vrmMonitor.IsDisposed)vrmMonitor.Text=SensorText(lastSystem.VrmTempC,"°C");
+            if(sensorStatusMonitor!=null&&!sensorStatusMonitor.IsDisposed)sensorStatusMonitor.Text=HwInfoBridge.Status;
+            if(cpuMonitorValue!=null&&!cpuMonitorValue.IsDisposed)cpuMonitorValue.Text=lastSystem.CpuPercent.HasValue?lastSystem.CpuPercent.Value.ToString("0")+"%":"—";
+            if(ramMonitorValue!=null&&!ramMonitorValue.IsDisposed)ramMonitorValue.Text=lastSystem.RamTotalGb>0?lastSystem.RamUsedGb.ToString("0.0")+" / "+lastSystem.RamTotalGb.ToString("0.0")+" GB":"—";
+            if(osdMonitorValue!=null&&!osdMonitorValue.IsDisposed)osdMonitorValue.Text=settings.OsdEnabled?L("ON  •  Alt+Shift+O","فعال  •  Alt+Shift+O"):L("OFF  •  Alt+Shift+O","خاموش  •  Alt+Shift+O");
+            if(settings.OsdEnabled && rtss.IsRunning && !Guard.IsProtected(currentTarget) && !Guard.IsLauncherHelper(currentTarget))
+                osd.Update(RtssOsdBridge.Format(sample,lastSystem,currentTarget,settings.OsdShowCpu,settings.OsdShowRam,settings.OsdShowGpu,settings.OsdShowVrm));
             if(liveValue!=null&&!liveValue.IsDisposed)liveValue.Text=sample.Valid?sample.Fps.ToString("0.0"):"--";
             if(frameValue!=null&&!frameValue.IsDisposed)frameValue.Text=sample.Valid?sample.FrameMs.ToString("0.00")+" ms":"--";
             if(graph!=null&&!graph.IsDisposed)graph.Push(sample.Valid?sample.FrameMs:float.NaN);
         }
+        static string SensorText(double? value,string unit){return value.HasValue?value.Value.ToString("0.0")+" "+unit:"—";}
         void RefreshRtssStatus()
         {
             if(rtssValue!=null&&!rtssValue.IsDisposed)rtssValue.Text=rtss.IsRunning?L("Running","فعال"):rtss.IsReady?L("Stopped","متوقف"):L("Missing","نصب نیست");
@@ -792,6 +852,100 @@ namespace PacePilot
             Action(opt,"Check for updates","بررسی بروزرسانی",17,138,210,41,true,(sender,e)=>CheckUpdates(true));
             canvas.Height=Math.Max(viewport.Height,800);
         }
+        void ToggleOsd()
+        {
+            if(testing)return;
+            if(settings.OsdEnabled)
+            {
+                settings.OsdEnabled=false;
+                osd.Clear();
+                Persist();UpdateLive();
+                SetStatus(L("In-game overlay disabled.","نمایش اطلاعات داخل بازی خاموش شد."),true);
+                return;
+            }
+            if(Guard.IsProtected(currentTarget)||Guard.IsLauncherHelper(currentTarget))
+            {
+                MessageBox.Show(this,L(
+                    "This is a protected game or launcher process. PacePilot does not override its anti-cheat restrictions. Choose a compatible game to use the RTSS overlay.",
+                    "این بازی یا پردازش لانچر محافظت‌شده است. PacePilot محدودیت‌های ضدتقلب را دور نمی‌زند. برای OSD یک بازی سازگار انتخاب کنید."),
+                    "PacePilot OSD",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                return;
+            }
+            if(!rtss.IsReady)
+            {
+                MessageBox.Show(this,L("RTSS is not installed. Install RTSS first.","RTSS نصب نیست. ابتدا RTSS را نصب کنید."),"PacePilot OSD");
+                return;
+            }
+            try
+            {
+                if(!rtss.IsRunning&&!rtss.Start())throw new InvalidOperationException("RTSS is not running.");
+                if(!osd.Update(RtssOsdBridge.Format(lastFrame,lastSystem,currentTarget,settings.OsdShowCpu,settings.OsdShowRam,settings.OsdShowGpu,settings.OsdShowVrm)))
+                    throw new IOException(osd.LastError);
+                settings.OsdEnabled=true;Persist();UpdateLive();
+                SetStatus(L("RTSS OSD enabled. Alt+Shift+O toggles the overlay.","نمایش OSD فعال شد؛ Alt+Shift+O برای روشن/خاموش."),true);
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(this,ex.Message,L("RTSS overlay unavailable","نمایش اطلاعات RTSS در دسترس نیست"),MessageBoxButtons.OK,MessageBoxIcon.Warning);
+            }
+        }
+        void DrawMonitor(int x,int w)
+        {
+            Header(x,w,"Gaming Performance HUD","نمایش عملکرد هنگام بازی",
+                "Live measurements, RTSS overlay and a configurable hotkey. No synthetic data.",
+                "اندازه‌گیری زنده، نمایش اطلاعات روی بازی و میانبر قابل‌استفاده.");
+            int gap=12;int half=(w-gap)/2;
+            StudioCard cpu=Card("CPU LOAD","پردازنده | CPU",x,101,half,161);
+            cpuMonitorValue=TextAt(cpu,"—","—",19,54,half-38,69,27,true,theme.Accent);
+            TextAt(cpu,"Measured CPU load (%)","میزان استفاده واقعی از پردازنده",19,122,half-38,25,9,false,theme.Secondary);
+            StudioCard ram=Card("SYSTEM RAM","حافظه RAM",x+half+gap,101,half,161);
+            ramMonitorValue=TextAt(ram,"—","—",19,54,half-38,69,23,true,theme.Accent);
+            TextAt(ram,"Used / installed physical memory","میزان مصرف و ظرفیت حافظه فیزیکی",19,122,half-38,25,9,false,theme.Secondary);
+            StudioCard hud=Card("RTSS IN-GAME OVERLAY","نمایش اطلاعات روی بازی (OSD)",x,274,w,224);
+            osdMonitorValue=TextAt(hud,settings.OsdEnabled?"ON  •  Alt+Shift+O":"OFF  •  Alt+Shift+O",
+                settings.OsdEnabled?"فعال  •  Alt+Shift+O":"خاموش  •  Alt+Shift+O",
+                20,50,w-40,38,15,true,theme.Accent);
+            Action(hud,settings.OsdEnabled?"Hide OSD":"Show OSD",settings.OsdEnabled?"مخفی‌کردن OSD":"نمایش OSD",
+                18,104,210,43,true,(sender,e)=>{ToggleOsd();DrawPage();});
+            Check(hud,"Include CPU usage","نمایش استفاده CPU",249,109,Math.Max(140,(w-278)/2),
+                ()=>settings.OsdShowCpu,v=>settings.OsdShowCpu=v);
+            Check(hud,"Include RAM usage","نمایش مصرف RAM",249,147,Math.Max(140,(w-278)/2),
+                ()=>settings.OsdShowRam,v=>settings.OsdShowRam=v);
+            Check(hud,"Include GPU data","نمایش GPU",Math.Min(500,w-150),109,Math.Max(120,w-520),
+                ()=>settings.OsdShowGpu,v=>settings.OsdShowGpu=v);
+            Check(hud,"Include VRM temp","نمایش دمای VRM",Math.Min(500,w-150),147,Math.Max(120,w-520),
+                ()=>settings.OsdShowVrm,v=>settings.OsdShowVrm=v);
+            TextAt(hud,"Keyboard shortcut: Alt+Shift+O   |   Requires RTSS injection support for the selected game.",
+                "میانبر: Alt+Shift+O  |  نمایش روی بازی نیازمند پشتیبانی آن بازی از RTSS است.",
+                20,187,w-40,27,9,false,theme.Secondary);
+            StudioCard preview=Card("LIVE FRAME-TIME BAR","نوار زنده زمان فریم",x,510,w,132);
+            string frameText=RtssOsdBridge.FrameBar(lastFrame.Valid?lastFrame.FrameMs:float.NaN);
+            Label bar=TextAt(preview,frameText,frameText,18,49,w-36,48,16,true,theme.Accent);
+            bar.Font=new Font("Consolas",16,FontStyle.Bold);
+            StudioCard hardware=Card("HARDWARE SENSORS • REAL VALUES","سنسورهای سخت‌افزار • داده واقعی",x,654,w,90);
+            sensorStatusMonitor=TextAt(hardware,"Connecting...","در حال اتصال...",18,46,w-36,29,11,false,theme.Secondary);
+            int third=(w-24)/3,space=12;
+            StudioCard gpuUsage=Card("GPU USAGE","درگیری گرافیک",x,756,third,129);
+            gpuLoadMonitor=TextAt(gpuUsage,"—","—",16,48,third-32,60,23,true,theme.Accent);
+            StudioCard gpuTemp=Card("GPU TEMPERATURE","دمای گرافیک",x+third+space,756,third,129);
+            gpuTempMonitor=TextAt(gpuTemp,"—","—",16,48,third-32,60,22,true,theme.Accent);
+            StudioCard gpuClock=Card("GPU CORE CLOCK","فرکانس گرافیک",x+2*(third+space),756,third,129);
+            gpuClockMonitor=TextAt(gpuClock,"—","—",16,48,third-32,60,22,true,theme.Accent);
+            StudioCard gpuPower=Card("GPU POWER","توان مصرفی گرافیک",x,898,third,129);
+            gpuPowerMonitor=TextAt(gpuPower,"—","—",16,48,third-32,60,22,true,theme.Accent);
+            StudioCard vram=Card("VIDEO MEMORY","حافظه گرافیکی VRAM",x+third+space,898,third,129);
+            vramMonitor=TextAt(vram,"—","—",14,48,third-28,60,17,true,theme.Accent);
+            StudioCard vrm=Card("VRM TEMPERATURE","دمای VRM",x+2*(third+space),898,third,129);
+            vrmMonitor=TextAt(vrm,"—","—",16,48,third-32,60,21,true,theme.Accent);
+            StudioCard cpuTemp=Card("CPU PACKAGE TEMPERATURE","دمای پردازنده CPU",x,1039,w,102);
+            cpuTempMonitor=TextAt(cpuTemp,"—","—",18,47,w-36,42,22,true,theme.Accent);
+            TextAt(canvas,"GPU/VRM readings require HWiNFO64 Sensors: Shared Memory Support.",
+                "برای مشاهده GPU و VRM، گزینه Shared Memory Support را در سنسورهای HWiNFO64 فعال کنید.",
+                x,1156,w,49,10,false,theme.Secondary);
+            canvas.Height=Math.Max(viewport.ClientSize.Height,1230);
+            if(!testing)UpdateLive();
+        }
+
         void DrawRtss(int x,int w)
         {
             Header(x,w,"RTSS integration","یکپارچه‌سازی RTSS","Actual framerate enforcement uses the separately installed RTSS engine.","اعمال واقعی محدودیت فریم توسط موتور جداگانه RTSS انجام می‌شود.");
@@ -804,7 +958,7 @@ namespace PacePilot
             Action(c,"Official download website","سایت رسمی دانلود",17,212,260,34,false,(s,e)=>OpenUrl(RtssOfficial));
             StudioCard report=Card("DIAGNOSTICS","عیب‌یابی",x,383,w,240);
             Action(report,"Copy full diagnostics","کپی گزارش کامل",17,48,230,38,true,(s,e)=>{try{Clipboard.SetText(rtss.Diagnostics(currentTarget));MessageBox.Show(this,L("Diagnostics copied.","گزارش کپی شد."));}catch(Exception ex){MessageBox.Show(this,ex.Message);}});
-            TextAt(report,"PacePilot does not modify protected anti-cheat games. Do not use a global cap in protected online titles.","PacePilot تنظیمات بازی‌های دارای ضدتقلب محافظت‌شده را تغییر نمی‌دهد. از محدودیت عمومی برای این بازی‌ها استفاده نکنید.",17,104,w-37,100,10,false,theme.Secondary);
+            TextAt(report,"Protected games are blocked individually; background anti-cheat services alone no longer block unrelated games. Use Alt+Shift+O to toggle the RTSS overlay.","بازی‌های محافظت‌شده به‌صورت مستقل محدود می‌شوند؛ سرویس ضدتقلب پس‌زمینه مانع سایر بازی‌ها نمی‌شود. کلید Alt+Shift+O برای OSD است.",17,104,w-37,100,10,false,theme.Secondary);
             canvas.Height=Math.Max(viewport.Height,700);
         }
         void DrawLogs(int x,int w)
@@ -936,8 +1090,9 @@ namespace PacePilot
         {
             if(m.Msg==0x0312 && !testing)
             {
-                if(currentPage!="dashboard"){currentPage="dashboard";Build();}
                 int hotkey=m.WParam.ToInt32();
+                if(hotkey==0xD103){ToggleOsd();return;}
+                if(currentPage!="dashboard"){currentPage="dashboard";Build();}
                 if(fpsBox!=null)
                 {
                     if(hotkey==0xD100){fpsBox.Value=fpsBox.Value==0?Math.Max(1,lastNonZero):0;ApplyLimit(true);}
@@ -956,13 +1111,14 @@ namespace PacePilot
                 WinApi.RegisterHotKey(Handle,0xD100,0x1|0x4,(uint)Keys.L);
                 WinApi.RegisterHotKey(Handle,0xD101,0x1|0x4,(uint)Keys.Up);
                 WinApi.RegisterHotKey(Handle,0xD102,0x1|0x4,(uint)Keys.Down);
+                WinApi.RegisterHotKey(Handle,0xD103,0x1|0x4,(uint)Keys.O);
             }
         }
         protected override void OnHandleDestroyed(EventArgs e)
         {
             if(!testing)
             {
-                WinApi.UnregisterHotKey(Handle,0xD100);WinApi.UnregisterHotKey(Handle,0xD101);WinApi.UnregisterHotKey(Handle,0xD102);
+                WinApi.UnregisterHotKey(Handle,0xD100);WinApi.UnregisterHotKey(Handle,0xD101);WinApi.UnregisterHotKey(Handle,0xD102);WinApi.UnregisterHotKey(Handle,0xD103);
             }
             base.OnHandleDestroyed(e);
         }
@@ -976,7 +1132,7 @@ namespace PacePilot
         {
             if(!testing&&!finishing&&settings.MinimizeToTray&&e.CloseReason==CloseReason.UserClosing)
             {e.Cancel=true;Hide();ShowInTaskbar=false;return;}
-            if(timer!=null)timer.Dispose();if(tray!=null){tray.Visible=false;tray.Dispose();}
+            if(timer!=null)timer.Dispose();osd.Clear();if(tray!=null){tray.Visible=false;tray.Dispose();}
             base.OnFormClosing(e);
         }
         public void SelfTest()
@@ -1005,6 +1161,13 @@ namespace PacePilot
             if(!side.Controls.OfType<Button>().Any(b=>b.Text.Contains("Dashboard")))throw new Exception("English navigation");
             if(!GameDiscovery.SelfTest())throw new Exception("Game discovery parser");
             if(!GitHubUpdates.SelfTest())throw new Exception("GitHub update comparator");
+            if(!SystemSampler.SelfTest())throw new Exception("RTSS OSD formatter");
+            if(!HwInfoBridge.SelfTest())throw new Exception("HWiNFO sensor parser");
+            if(!Guard.IsProtected("TslGame.exe") || Guard.IsProtected("Cyberpunk2077.exe") ||
+               !Guard.IsLauncherHelper("UnrealCEFSubProcess_3071.exe") ||
+               Guard.ShouldBlock("Cyberpunk2077.exe",Guard.Check("Cyberpunk2077.exe")))
+                throw new Exception("Protected title / unrelated game compatibility guard");
+            currentPage="monitor";Build();if(!canvas.Controls.OfType<StudioCard>().Any())throw new Exception("Performance monitor page");
             string content="[General]\r\nName=keep\r\n[Framerate]\r\nLimit=0\r\nLimitDenominator=99\r\n";
             string patched=RtssProfileFile.SetFrameLimit(content,60);
             if(!patched.Contains("Limit=60")||!patched.Contains("LimitDenominator=1")||!patched.Contains("Name=keep"))throw new Exception("RTSS profile regression");

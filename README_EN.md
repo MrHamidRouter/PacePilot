@@ -48,3 +48,13 @@ PacePilot is a standalone RTSS frontend, **not a reproduction of FramePacer's pr
 - Extract the ZIP and use Setup-PacePilot.bat if RTSS is not installed.
 
 **Developer: Mr.HamidRouter**
+
+## PacePilot 2.2 – in-game RTSS OSD and sensors
+
+- One PacePilot Windows executable includes the existing FPS controls, game discovery, six themed layouts, and a Performance HUD.
+- Press **Alt + Shift + O** to toggle the in-game RTSS overlay. It owns an RTSSSharedMemoryV2 OSD slot; it does **not** inject into or evade protections of any game.
+- FPS, frametime, and the 20-segment frametime bar are based on actual RTSS shared-memory samples; unavailable readings remain blank.
+- CPU and RAM come from native Windows counters. For GPU usage, GPU/CPU temperature, GPU clock, power, VRAM and VRM, run **HWiNFO64 Sensors** with **Shared Memory Support** enabled. Missing hardware readings show **—**.
+- Background anti-cheat *services* no longer block unrelated compatible games. **Actual protected titles** (e.g. PUBG/BattlEye, Valorant, Fortnite) remain excluded from PacePilot's external limits and hook-dependent OSD. Use each game's own FPS limiter.
+- A green GitHub Windows build and self-test do not establish real-game compatibility; verify FPS application and OSD visibility on the target system.
+
