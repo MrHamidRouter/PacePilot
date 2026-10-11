@@ -14,7 +14,8 @@ namespace PacePilot
     public static class HwInfoBridge
     {
         const uint HwInfoSignature=0x53695748;  // 'HWiS'
-        public static string Status { get; private set; } = "Not connected";
+        public static string Status { get; private set; }
+        static HwInfoBridge(){Status="Not connected";}
         public static void Enrich(ref SystemSample system)
         {
             Status="HWiNFO sensor shared memory not found";
