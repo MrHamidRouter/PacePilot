@@ -44,7 +44,7 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /out:Bin\PacePilot-test.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs Source\BuiltInSensors.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /out:Bin\PacePilot-test.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs Source\BuiltInSensors.cs Source\HardwareInventoryService.cs Source\HardwareSensorService.cs Source\SensorMappingForm.cs
       - name: English and Persian UI self-test
         shell: powershell
         run: |
@@ -57,7 +57,7 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /win32manifest:Assets\PacePilot.Administrator.manifest /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs Source\BuiltInSensors.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /win32manifest:Assets\PacePilot.Administrator.manifest /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs Source\BuiltInSensors.cs Source\HardwareInventoryService.cs Source\HardwareSensorService.cs Source\SensorMappingForm.cs
       - name: Pack a single ready-to-use Windows ZIP
         shell: powershell
         run: |
@@ -86,7 +86,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $repo = $env:GITHUB_REPOSITORY
-          $tag = 'v2.5.2'
+          $tag = 'v2.6.0'
           $package = 'dist/PacePilot-Windows-x64.zip'
           if (-not (Test-Path $package)) { throw 'Release ZIP missing' }
           # Listing releases succeeds with an empty array on first publication.
@@ -100,6 +100,6 @@ jobs:
             gh release upload $tag $package --clobber --repo $repo
           } else {
             Write-Host "Creating first release $tag"
-            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.5.2' --notes 'PacePilot Studio 2.5.2 adds actual CPU Package Temperature to the main dashboard alongside CPU usage, GPU, GPU temperature, VRAM, RAM, GPU power, GPU VRM and motherboard VRM. Nine hardware cards automatically wrap on narrower windows. The native sensor engine recognizes more VRM sensor aliases and provides a diagnostic list of real published temperature sensor names when no VRM value is available. All existing RTSS, frame activity, game scan and premium themes remain unchanged. Hardware without VRM sensors cannot report VRM temperatures.' --latest
+            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.6.0' --notes 'PacePilot 2.6 integrates hardware inventory in a background task with CPU/GPU/motherboard/RAM names under nine native hardware tiles. Manual GPU VRM and motherboard VRM sensor mapping identifies exact LibreHardwareMonitor temperature sensor IDs, shows unavailable values, and saves selections in settings.xml. The original sensor engine, FPS/RTSS, OSD, themes and game profiles are preserved. Hardware without VRM temperature sensors still reports N/A.' --latest
           }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publish failed' }
