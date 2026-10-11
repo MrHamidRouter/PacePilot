@@ -24,8 +24,8 @@ using System.Reflection;
 [assembly: AssemblyCompany("Mr.HamidRouter")]
 [assembly: AssemblyProduct("PacePilot")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Mr.HamidRouter")]
-[assembly: AssemblyVersion("2.1.0.0")]
-[assembly: AssemblyFileVersion("2.1.0.0")]
+[assembly: AssemblyVersion("2.2.0.0")]
+[assembly: AssemblyFileVersion("2.2.0.0")]
 
 namespace PacePilot
 {
@@ -52,12 +52,15 @@ namespace PacePilot
         public bool AlwaysOnTop { get; set; }
         public bool AutoSelectKnownGames { get; set; }
         public string LastTarget { get; set; }
+        public bool OsdEnabled { get; set; }
+        public bool OsdShowCpu { get; set; }
+        public bool OsdShowRam { get; set; }
         public DateTime LastUpdateCheckUtc { get; set; }
         public List<GameProfile> Games { get; set; }
         public AppSettings()
         {
             RtssFolder = ""; ThemeName = "teal"; LanguageCode = "en"; GlobalLimit = 60; MinimizeToTray = true;
-            LastTarget = "Global"; AutoSelectKnownGames = true; Games = new List<GameProfile>();
+            LastTarget = "Global"; AutoSelectKnownGames = true; OsdEnabled=false; OsdShowCpu=true; OsdShowRam=true; Games = new List<GameProfile>();
         }
     }
 
@@ -574,21 +577,51 @@ namespace PacePilot
 
     public static class Guard
     {
+        // Compatibility decision is based on the SELECTED game, not a background service
+        // from an unrelated game/session. Never attempt anti-cheat bypass or hook evasion.
         private static readonly string[] ProtectedGames = {
-            "valorant", "fortniteclient", "fortnite", "r5apex", "rainbowsix", "cod", "modernwarfare", "league of legends", "pubg", "tcon", "destiny2"
+            "valorant", "fortniteclient", "fortnite", "r5apex", "rainbowsix",
+            "modernwarfare", "destiny2", "tslgame", "pubg", "cod.exe", "league of legends"
         };
-        private static readonly string[] ActiveServices = { "EasyAntiCheat", "EasyAntiCheat_EOS", "BEService", "vgc", "vgk", "EAAntiCheat.GameService" };
+        private static readonly string[] Launchers = { "unrealcefsubprocess", "epicwebhelper", "steamwebhelper", "cefsharp.browsersubprocess" };
+        public static bool IsProtected(string exe)
+        {
+            string stem=Path.GetFileName(exe??"").ToLowerInvariant();
+            return ProtectedGames.Any(x=>stem.Contains(x));
+        }
+        public static bool IsLauncherHelper(string exe)
+        {
+            string stem=Path.GetFileName(exe??"").ToLowerInvariant();
+            return Launchers.Any(x=>stem.Contains(x));
+        }
         public static string Check(string exe)
         {
-            string stem = (exe ?? "").ToLowerInvariant();
-            if (ProtectedGames.Any(x => stem.Contains(x))) return "This game is on the protected anti-cheat blocklist. No RTSS changes will be made.";
-            foreach (string service in ActiveServices)
+            if(IsLauncherHelper(exe))
+                return "Protected or launcher helper executable selected. Select the actual game's EXE, not a web/browser subprocess.";
+            if(IsProtected(exe))
+                return "This title is protected by anti-cheat. PacePilot will not apply RTSS hooks or limits to this game. Use its built-in frame limiter.";
+            if(String.Equals(exe,"Global",StringComparison.OrdinalIgnoreCase))
             {
-                try { if (Process.GetProcessesByName(service).Length > 0) return "Anti-cheat process detected (" + service + "). Close the protected game before applying."; }
-                catch { }
+                // Global caps also affect protected games. Refuse only if a protected game
+                // itself is currently running, not simply because the service is installed.
+                foreach(string token in ProtectedGames)
+                {
+                    try
+                    {
+                        if(Process.GetProcessesByName(token).Length>0)
+                            return "A protected anti-cheat game is running ("+token+"). Global RTSS caps are unavailable until that game exits.";
+                    }
+                    catch {}
+                }
+                return "Global FPS caps can affect protected titles. Apply only when compatible games are in use.";
             }
-            if (exe == "Global") return "Global mode can affect protected games. Never use an external limiter in online anti-cheat titles.";
             return "";
+        }
+        public static bool ShouldBlock(string exe,string message)
+        {
+            return IsProtected(exe) || IsLauncherHelper(exe) ||
+                (String.Equals(exe,"Global",StringComparison.OrdinalIgnoreCase) &&
+                 !String.IsNullOrEmpty(message) && message.StartsWith("A protected anti-cheat",StringComparison.Ordinal));
         }
     }
 
