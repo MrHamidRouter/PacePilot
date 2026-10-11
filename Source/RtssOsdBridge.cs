@@ -42,11 +42,12 @@ namespace PacePilot
                 if(sys.GpuClockMhz.HasValue)text.Append(' ').Append(sys.GpuClockMhz.Value.ToString("0")).Append("MHz");
                 if(sys.GpuPowerW.HasValue)text.Append(' ').Append(sys.GpuPowerW.Value.ToString("0")).Append('W');
             }
-            if((gpu && sys.VramUsedGb.HasValue) || (vrm && sys.VrmTempC.HasValue))
+            if((gpu && sys.VramUsedGb.HasValue) || (vrm && (sys.GpuVrmTempC.HasValue||sys.VrmTempC.HasValue)))
             {
                 text.Append("\n");
                 if(gpu && sys.VramUsedGb.HasValue)text.Append("VRAM ").Append(sys.VramUsedGb.Value.ToString("0.0")).Append("GB");
-                if(vrm && sys.VrmTempC.HasValue)text.Append("   VRM ").Append(sys.VrmTempC.Value.ToString("0")).Append('C');
+                if(vrm && sys.GpuVrmTempC.HasValue)text.Append("  GPU VRM ").Append(sys.GpuVrmTempC.Value.ToString("0")).Append('C');
+                if(vrm && sys.VrmTempC.HasValue)text.Append("  MB VRM ").Append(sys.VrmTempC.Value.ToString("0")).Append('C');
             }
             return text.ToString();
         }
@@ -163,7 +164,7 @@ namespace PacePilot
     {
         public double? CpuPercent;
         public double RamUsedGb, RamTotalGb;
-        public double? CpuTempC, CpuClockGhz, GpuLoad, GpuTempC, GpuClockMhz, GpuPowerW, VramUsedGb, VramTotalGb, VrmTempC;
+        public double? CpuTempC, CpuClockGhz, GpuLoad, GpuTempC, GpuClockMhz, GpuPowerW, VramUsedGb, VramTotalGb, GpuVrmTempC, VrmTempC;
     }
     // Native Windows counters are collected without third-party services or fake GPU temperatures.
     public sealed class SystemSampler

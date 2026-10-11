@@ -91,3 +91,8 @@ Click any empty GPU/VRAM/VRM tile for provider diagnostics and setup steps. For 
 The **hardware sensor engine is bundled inside the PacePilot ZIP**: the executable and managed hardware-monitoring DLLs are shipped together. Users **do not install or run** HWiNFO64, MSI Afterburner, LibreHardwareMonitor, or any sensor service. PacePilot directly enumerates CPU, GPU and motherboard sensors via the bundled [LibreHardwareMonitorLib 0.9.4](https://www.nuget.org/packages/LibreHardwareMonitorLib/0.9.4) component, polled asynchronously without blocking the UI. Native Windows GPU utilization/memory counters are available as a fallback. Sensor engine status and missing-sensor diagnostics are available by clicking a GPU/VRM tile. 
 
 **RTSS is still the only separate third-party application necessary** for FPS limiting and in-game OSD. The six themes, game scanner, frame graph, FPS profiles, OSD keyboard toggle and safe RAM readiness stay unchanged. The ZIP includes DLL dependencies and MPL-2.0 license, so keep the extracted files together (do not move only `PacePilot.exe`). Windows/driver protections and missing physical VRM sensors may still prevent certain readings; never disable security features or invent values.
+
+
+## v2.5.1 — Correct update status and separate GPU VRM temperature
+
+PacePilot now derives its installed version from the executing EXE assembly; the manual updater shows both installed version and latest official GitHub Release instead of stale 2.3.0 text. The dashboard, performance HUD and OSD distinguish GPU VRM Temperature from Motherboard VRM Temperature. These are separate optional readings; either may remain unavailable on devices without the relevant sensor. All FPS/RTSS functions and premium UI themes are preserved.

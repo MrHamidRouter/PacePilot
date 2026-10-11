@@ -16,7 +16,7 @@ namespace PacePilot
 {
     internal sealed class NativeSensorValues
     {
-        public double? CpuTemp,CpuClock,GpuLoad,GpuTemp,GpuClock,GpuPower,VramUsed,VramTotal,VrmTemp;
+        public double? CpuTemp,CpuClock,GpuLoad,GpuTemp,GpuClock,GpuPower,VramUsed,VramTotal,GpuVrmTemp,VrmTemp;
         public int Count;
         public string Status="Sensor engine not yet initialized";
         public NativeSensorValues Copy(){return (NativeSensorValues)MemberwiseClone();}
@@ -112,8 +112,11 @@ namespace PacePilot
                 if(type=="Clock" && Has(name,"CPU Core #1","Core #1","Core 0","Core (Effective)"))
                     target.CpuClock=Take(target.CpuClock,v/1000.0,.1,9);
             }
-            if(type=="Temperature" && (motherboard||gpu) && Has(name,"VRM","VR MOS","MOSFET","Vcore MOS","VR VDDC"))
-                target.VrmTemp=Take(target.VrmTemp,v,0,150);
+            if(type=="Temperature" && Has(name,"VRM","VR MOS","MOSFET","Vcore MOS","VR VDDC","GPU VRM"))
+            {
+                if(gpu) target.GpuVrmTemp=Take(target.GpuVrmTemp,v,0,150);
+                else if(motherboard)target.VrmTemp=Take(target.VrmTemp,v,0,150);
+            }
             target.Count++;
         }
         static IEnumerable<object> Enumerate(object instance,string prop)
@@ -226,6 +229,7 @@ namespace PacePilot
             sys.GpuPowerW=Take(sys.GpuPowerW,sample.GpuPower,0,1000);
             sys.VramUsedGb=Take(sys.VramUsedGb,sample.VramUsed,0,256);
             sys.VramTotalGb=Take(sys.VramTotalGb,sample.VramTotal,.1,256);
+            sys.GpuVrmTempC=Take(sys.GpuVrmTempC,sample.GpuVrmTemp,0,150);
             sys.VrmTempC=Take(sys.VrmTempC,sample.VrmTemp,0,150);
         }
         public static bool SelfTest()
@@ -236,6 +240,7 @@ namespace PacePilot
             Record(s,"GpuAmd","GPU Memory Used","SmallData",4096);
             Record(s,"GpuAmd","GPU Power","Power",115);
             Record(s,"SuperIO","VRM MOS","Temperature",69);
+            Record(s,"GpuAmd","GPU VRM Temperature","Temperature",84);
             Record(s,"Cpu","CPU Package","Temperature",64);
             bool bundled=false;
             try
@@ -247,7 +252,7 @@ namespace PacePilot
             }
             catch{bundled=false;}
             return s.GpuLoad==91 && s.GpuTemp==72 && s.VramUsed==4 && s.GpuPower==115 &&
-                s.VrmTemp==69 && s.CpuTemp==64 &&
+                s.VrmTemp==69 && s.GpuVrmTemp==84 && s.CpuTemp==64 &&
                 Priority("GpuAmd")<Priority("GpuIntel") && bundled;
         }
     }

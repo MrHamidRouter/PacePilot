@@ -15,7 +15,7 @@ namespace PacePilot
 {
     internal sealed class HardwareSensorSnapshot
     {
-        public double? CpuTempC,CpuClockGhz,GpuLoad,GpuTempC,GpuClockMhz,GpuPowerW,VramUsedGb,VramTotalGb,VrmTempC;
+        public double? CpuTempC,CpuClockGhz,GpuLoad,GpuTempC,GpuClockMhz,GpuPowerW,VramUsedGb,VramTotalGb,GpuVrmTempC,VrmTempC;
         public string Source="No secondary sensor provider detected";
         public int ObservedSensors;
         public HardwareSensorSnapshot Copy()
@@ -61,6 +61,7 @@ namespace PacePilot
             system.GpuPowerW=ChooseNullable(system.GpuPowerW,cache.GpuPowerW,0,1000);
             system.VramUsedGb=ChooseNullable(system.VramUsedGb,cache.VramUsedGb,0,256);
             system.VramTotalGb=ChooseNullable(system.VramTotalGb,cache.VramTotalGb,0,256);
+            system.GpuVrmTempC=ChooseNullable(system.GpuVrmTempC,cache.GpuVrmTempC,0,150);
             system.VrmTempC=ChooseNullable(system.VrmTempC,cache.VrmTempC,0,150);
         }
         static void Refresh()
@@ -112,7 +113,8 @@ namespace PacePilot
                         bool mb=Has(kind,"SmallData");
                         bool gb=Has(kind,"Data")&&!mb;
                         bool vrm=temp && Has(name,"VRM","VR MOS","MOSFET","VRM MOS","VR VDDC");
-                        if(vrm) next.VrmTempC=Choose(next.VrmTempC,value,0,150);
+                        if(vrm && gpu)next.GpuVrmTempC=Choose(next.GpuVrmTempC,value,0,150);
+                        else if(vrm && !gpu)next.VrmTempC=Choose(next.VrmTempC,value,0,150);
                         if(gpu)
                         {
                             if(temp && Has(name,"GPU Core","GPU Temperature","GPU Hot Spot","GPU Hotspot","GPU Edge"))
