@@ -666,7 +666,7 @@ namespace PacePilot
             if(ramMonitorValue!=null&&!ramMonitorValue.IsDisposed)ramMonitorValue.Text=lastSystem.RamTotalGb>0?lastSystem.RamUsedGb.ToString("0.0")+" / "+lastSystem.RamTotalGb.ToString("0.0")+" GB":"—";
             if(osdMonitorValue!=null&&!osdMonitorValue.IsDisposed)osdMonitorValue.Text=settings.OsdEnabled?L("ON  •  Alt+Shift+O","فعال  •  Alt+Shift+O"):L("OFF  •  Alt+Shift+O","خاموش  •  Alt+Shift+O");
             if(settings.OsdEnabled && rtss.IsRunning && !Guard.IsProtected(currentTarget) && !Guard.IsLauncherHelper(currentTarget))
-                osd.Update(RtssOsdBridge.Format(sample,lastSystem,currentTarget,settings.OsdShowCpu,settings.OsdShowRam));
+                osd.Update(RtssOsdBridge.Format(sample,lastSystem,currentTarget,settings.OsdShowCpu,settings.OsdShowRam,settings.OsdShowGpu,settings.OsdShowVrm));
             if(liveValue!=null&&!liveValue.IsDisposed)liveValue.Text=sample.Valid?sample.Fps.ToString("0.0"):"--";
             if(frameValue!=null&&!frameValue.IsDisposed)frameValue.Text=sample.Valid?sample.FrameMs.ToString("0.00")+" ms":"--";
             if(graph!=null&&!graph.IsDisposed)graph.Push(sample.Valid?sample.FrameMs:float.NaN);
@@ -879,7 +879,7 @@ namespace PacePilot
             try
             {
                 if(!rtss.IsRunning&&!rtss.Start())throw new InvalidOperationException("RTSS is not running.");
-                if(!osd.Update(RtssOsdBridge.Format(lastFrame,lastSystem,currentTarget,settings.OsdShowCpu,settings.OsdShowRam)))
+                if(!osd.Update(RtssOsdBridge.Format(lastFrame,lastSystem,currentTarget,settings.OsdShowCpu,settings.OsdShowRam,settings.OsdShowGpu,settings.OsdShowVrm)))
                     throw new IOException(osd.LastError);
                 settings.OsdEnabled=true;Persist();UpdateLive();
                 SetStatus(L("RTSS OSD enabled. Alt+Shift+O toggles the overlay.","نمایش OSD فعال شد؛ Alt+Shift+O برای روشن/خاموش."),true);
@@ -911,6 +911,10 @@ namespace PacePilot
                 ()=>settings.OsdShowCpu,v=>settings.OsdShowCpu=v);
             Check(hud,"Include RAM usage","نمایش مصرف RAM",249,147,Math.Max(140,(w-278)/2),
                 ()=>settings.OsdShowRam,v=>settings.OsdShowRam=v);
+            Check(hud,"Include GPU data","نمایش GPU",Math.Min(500,w-150),109,Math.Max(120,w-520),
+                ()=>settings.OsdShowGpu,v=>settings.OsdShowGpu=v);
+            Check(hud,"Include VRM temp","نمایش دمای VRM",Math.Min(500,w-150),147,Math.Max(120,w-520),
+                ()=>settings.OsdShowVrm,v=>settings.OsdShowVrm=v);
             TextAt(hud,"Keyboard shortcut: Alt+Shift+O   |   Requires RTSS injection support for the selected game.",
                 "میانبر: Alt+Shift+O  |  نمایش روی بازی نیازمند پشتیبانی آن بازی از RTSS است.",
                 20,187,w-40,27,9,false,theme.Secondary);
