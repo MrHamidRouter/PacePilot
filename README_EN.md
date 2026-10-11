@@ -1,5 +1,12 @@
 # PacePilot Studio v2.1
 
+### Administrator launch and FPS verification (v2.1.1)
+
+`PacePilot.exe` has a standard Windows **requireAdministrator** manifest. Windows UAC consent is expected on launch. This build no longer aborts on an early RTSS native-memory mismatch: it proceeds through save and verified profile repair, then checks the profile on disk and via RTSS before claiming success. The target game must support RTSS interception.
+
+**Startup tradeoff:** A requireAdministrator executable cannot guarantee silent elevated sign-in startup; UAC consent may be needed. This application does not bypass UAC or SmartScreen.
+
+
 **Developer: Mr.HamidRouter**
 
 An original, open-source Windows frontend for RTSS FPS limiting with **six distinct, functional themes** and English/Persian localization.
