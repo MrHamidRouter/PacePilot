@@ -15,10 +15,13 @@ namespace PacePilot
     {
         const uint HwInfoSignature=0x53695748;  // 'HWiS'
         public static string Status { get; private set; }
+        public static int ReadingCount { get; private set; }
+        public static int MatchedReadings { get; private set; }
         static HwInfoBridge(){Status="Not connected";}
         public static void Enrich(ref SystemSample system)
         {
-            Status="HWiNFO sensor shared memory not found";
+            ReadingCount=0;MatchedReadings=0;
+            Status="HWiNFO Shared Memory is OFF or Sensors-only is not running. Enable Shared Memory Support in HWiNFO General Settings.";
             try
             {
                 using(MemoryMappedFile map=MemoryMappedFile.OpenExisting(@"Global\HWiNFO_SENS_SM2",MemoryMappedFileRights.Read))
@@ -43,6 +46,7 @@ namespace PacePilot
                         if(String.IsNullOrWhiteSpace(name))name=ReadAnsi(view,p+8,128);
                         devices.Add(name);
                     }
+                    ReadingCount=(int)readingCount;
                     for(long j=0;j<readingCount;j++)
                     {
                         long p=readingOffset+j*readingSize;
@@ -52,6 +56,9 @@ namespace PacePilot
                         string group=devices[(int)index];
                         string name=ReadAnsi(view,p+140,128);
                         if(String.IsNullOrWhiteSpace(name))name=ReadAnsi(view,p+12,128);
+                        string original=ReadAnsi(view,p+12,128);
+                        if(!String.IsNullOrWhiteSpace(original) && !String.Equals(name,original,StringComparison.OrdinalIgnoreCase))
+                            name=name+" | "+original;
                         string unit=ReadAnsi(view,p+268,16);
                         double value=view.ReadDouble(p+284);
                         if(Double.IsNaN(value)||Double.IsInfinity(value))continue;
@@ -61,23 +68,24 @@ namespace PacePilot
                         bool watts=kind==5;
                         bool clock=kind==6;
                         bool usage=kind==7;
+                        if(gpu) MatchedReadings++;
                         if(gpu)
                         {
-                            if(temp && Contains(name,"GPU Temperature","GPU Core","GPU Hot Spot") && InRange(value,0,140))
+                            if(temp && Contains(name,"GPU Temperature","GPU Core","GPU Hot Spot","GPU Hotspot","GPU Edge Temperature","GPU Thermal Diode") && InRange(value,0,140))
                                 system.GpuTempC=Pick(system.GpuTempC,value);
-                            if(usage && Contains(name,"GPU Core Load","GPU D3D Usage","GPU Usage","GPU Utilization") && InRange(value,0,100))
+                            if(usage && Contains(name,"GPU Core Load","GPU D3D Usage","GPU Usage","GPU Utilization","GPU 3D Usage","GPU Load","GPU Core Utilization") && InRange(value,0,100))
                                 system.GpuLoad=Pick(system.GpuLoad,value);
-                            if(clock && Contains(name,"GPU Clock","GPU Core Clock","GPU Core") && InRange(value,10,5000))
+                            if(clock && Contains(name,"GPU Clock","GPU Core Clock","GPU Core","GPU Shader Clock") && InRange(value,10,5000))
                                 system.GpuClockMhz=Pick(system.GpuClockMhz,value);
-                            if(watts && Contains(name,"GPU Power","GPU ASIC Power","GPU Board Power","GPU Chip Power","Total Graphics Power") && InRange(value,0,1000))
+                            if(watts && Contains(name,"GPU Power","GPU ASIC Power","GPU Board Power","GPU Chip Power","Total Graphics Power","GPU Total Power","GPU PPT") && InRange(value,0,1000))
                                 system.GpuPowerW=Pick(system.GpuPowerW,value);
-                            if(Contains(name,"GPU Memory Allocated","Dedicated GPU Memory Used","GPU Memory Used","Video Memory Used","GPU D3D Memory Dedicated"))
+                            if(Contains(name,"GPU Memory Allocated","Dedicated GPU Memory Used","GPU Memory Used","Video Memory Used","GPU D3D Memory Dedicated","GPU Memory Usage","GPU VRAM Used","GPU Memory Dedicated","GPU Memory Occupied"))
                             {
                                 double? mb=ToMegabytes(value,unit);
                                 if(mb.HasValue && InRange(mb.Value,0,262144))
                                     system.VramUsedGb=Pick(system.VramUsedGb,mb.Value/1024.0);
                             }
-                            if(Contains(name,"GPU Memory Total","GPU Memory Available"))
+                            if(Contains(name,"GPU Memory Total","GPU Memory Available","GPU Memory Size","Dedicated Memory Total","Total Video Memory"))
                             {
                                 double? mb=ToMegabytes(value,unit);
                                 if(mb.HasValue && InRange(mb.Value,0,262144))
@@ -91,14 +99,14 @@ namespace PacePilot
                             if(clock && Contains(name,"Core Effective Clock","Core Clock") && InRange(value,100,9000))
                                 system.CpuClockGhz=Pick(system.CpuClockGhz,value/1000.0);
                         }
-                        if(temp && Contains(name,"VRM MOS","VR MOS","VRM Temperature","VRM Temp") && InRange(value,0,150))
+                        if(temp && Contains(name,"VRM MOS","VR MOS","VRM Temperature","VRM Temp","MOSFET Temperature","VRM MOSFET","VRM Thermal") && InRange(value,0,150))
                             system.VrmTempC=Pick(system.VrmTempC,value);
                     }
-                    Status="HWiNFO sensors connected";
+                    Status="HWiNFO Shared Memory connected: "+ReadingCount+" readings; "+MatchedReadings+" GPU readings. Missing values may not be exposed by this hardware.";
                 }
             }
-            catch(FileNotFoundException) { }
-            catch(Exception e) {Status="Sensor feed unavailable: "+e.GetType().Name;}
+            catch(FileNotFoundException) { Status="HWiNFO shared memory is unavailable. Open HWiNFO Sensors-only, enable Shared Memory Support in General Settings."; }
+            catch(Exception e) {Status="HWiNFO sensor feed unavailable: "+e.GetType().Name+" ("+e.Message+")";}
         }
         static bool Contains(string value,params string[] words)
         {
