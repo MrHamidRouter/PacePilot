@@ -89,6 +89,48 @@ namespace PacePilot
             return bitmap;
         }
     }
+    // Native owner-drawn controls: themed gradients and antialiased corners in every skin.
+    public sealed class StudioButton : Button
+    {
+        bool hovering,pressed;
+        public StudioButton()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw,true);
+            DoubleBuffered=true;
+        }
+        protected override void OnMouseEnter(EventArgs e){hovering=true;Invalidate();base.OnMouseEnter(e);}
+        protected override void OnMouseLeave(EventArgs e){hovering=false;pressed=false;Invalidate();base.OnMouseLeave(e);}
+        protected override void OnMouseDown(MouseEventArgs e){pressed=true;Invalidate();base.OnMouseDown(e);}
+        protected override void OnMouseUp(MouseEventArgs e){pressed=false;Invalidate();base.OnMouseUp(e);}
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;
+            if(Width<3||Height<3)return;
+            Rectangle rect=new Rectangle(0,0,Width-1,Height-1);
+            Color back=BackColor;
+            if(!Enabled)back=ControlPaint.Dark(back,.22f);
+            else if(pressed)back=ControlPaint.Dark(back,.14f);
+            else if(hovering)back=ControlPaint.Light(back,.12f);
+            using(GraphicsPath shape=StudioCard.RoundRect(rect,9))
+            using(LinearGradientBrush gradient=new LinearGradientBrush(rect,
+                ControlPaint.Light(back,.13f),back,LinearGradientMode.Vertical))
+            {
+                g.FillPath(gradient,shape);
+                using(Pen edge=new Pen(FlatAppearance.BorderColor.IsEmpty?ControlPaint.Light(back,.18f):FlatAppearance.BorderColor))
+                    g.DrawPath(edge,shape);
+            }
+            TextFormatFlags flags=TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|
+                TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine;
+            if(TextAlign==ContentAlignment.MiddleLeft)flags|=TextFormatFlags.Left;
+            else if(TextAlign==ContentAlignment.MiddleRight)flags|=TextFormatFlags.Right;
+            else flags|=TextFormatFlags.HorizontalCenter;
+            if(RightToLeft==RightToLeft.Yes)flags|=TextFormatFlags.RightToLeft;
+            Rectangle textRect=new Rectangle(Padding.Left+5,0,Math.Max(1,Width-Padding.Left-Padding.Right-10),Height);
+            TextRenderer.DrawText(g,Text,Font,textRect,Enabled?ForeColor:SystemColors.GrayText,flags);
+        }
+    }
+
     public class StudioCard : Panel
     {
         public StudioTheme Theme;
@@ -279,7 +321,7 @@ namespace PacePilot
         }
         Button Action(Control p,string en,string fa,int x,int y,int w,int h,bool prominent,EventHandler click)
         {
-            Button b=new Button(); b.Text=L(en,fa); b.SetBounds(x,y,w,h);
+            Button b=new StudioButton(); b.Text=L(en,fa); b.SetBounds(x,y,w,h);
             b.ForeColor=prominent?theme.AccentInk:theme.Ink;
             b.BackColor=prominent?theme.Accent:theme.Sidebar;
             b.FlatStyle=FlatStyle.Flat; b.FlatAppearance.BorderColor=prominent?theme.Accent:theme.Border;
