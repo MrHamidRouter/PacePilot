@@ -86,7 +86,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $repo = $env:GITHUB_REPOSITORY
-          $tag = 'v2.5.0'
+          $tag = 'v2.5.1'
           $package = 'dist/PacePilot-Windows-x64.zip'
           if (-not (Test-Path $package)) { throw 'Release ZIP missing' }
           # Listing releases succeeds with an empty array on first publication.
@@ -100,6 +100,6 @@ jobs:
             gh release upload $tag $package --clobber --repo $repo
           } else {
             Write-Host "Creating first release $tag"
-            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.5.0' --notes 'PacePilot v2.5.0 now bundles the LibreHardwareMonitor sensor engine inside the portable Windows ZIP. CPU/GPU temperature, GPU load, clocks, power and VRAM/VRM sensors are read by PacePilot itself; no HWiNFO, Afterburner or separate LibreHardwareMonitor installation is required. RTSS is the only external application needed for FPS limiting and OSD. Real readings depend on compatible motherboard/GPU and Windows sensor driver permissions. All six UI themes and game profiles are preserved.' --latest
+            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.5.1' --notes 'PacePilot 2.5.1 fixes incorrect stale version 2.3.0 in update dialogs. The installed version is obtained from the running EXE, and latest official GitHub release is displayed separately. Dedicated GPU VRM and motherboard VRM temperature sensor readings are shown as distinct telemetry tiles and OSD values, where available. RTSS, built-in LibreHardwareMonitor sensors, six visual themes, game profiles and other features remain intact.' --latest
           }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publish failed' }
