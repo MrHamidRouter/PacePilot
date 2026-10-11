@@ -57,12 +57,14 @@ namespace PacePilot
         public bool OsdShowRam { get; set; }
         public bool OsdShowGpu { get; set; }
         public bool OsdShowVrm { get; set; }
+        public string GpuVrmSensorId { get; set; }
+        public string BoardVrmSensorId { get; set; }
         public DateTime LastUpdateCheckUtc { get; set; }
         public List<GameProfile> Games { get; set; }
         public AppSettings()
         {
             RtssFolder = ""; ThemeName = "teal"; LanguageCode = "en"; GlobalLimit = 60; MinimizeToTray = true;
-            LastTarget = "Global"; AutoSelectKnownGames = true; OsdEnabled=false; OsdShowCpu=true; OsdShowRam=true; OsdShowGpu=true; OsdShowVrm=true; Games = new List<GameProfile>();
+            LastTarget = "Global"; AutoSelectKnownGames = true; OsdEnabled=false; OsdShowCpu=true; OsdShowRam=true; OsdShowGpu=true; OsdShowVrm=true; GpuVrmSensorId=""; BoardVrmSensorId=""; Games = new List<GameProfile>();
         }
     }
 
