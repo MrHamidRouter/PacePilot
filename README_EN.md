@@ -96,3 +96,10 @@ The **hardware sensor engine is bundled inside the PacePilot ZIP**: the executab
 ## v2.5.1 — Correct update status and separate GPU VRM temperature
 
 PacePilot now derives its installed version from the executing EXE assembly; the manual updater shows both installed version and latest official GitHub Release instead of stale 2.3.0 text. The dashboard, performance HUD and OSD distinguish GPU VRM Temperature from Motherboard VRM Temperature. These are separate optional readings; either may remain unavailable on devices without the relevant sensor. All FPS/RTSS functions and premium UI themes are preserved.
+
+
+## v2.5.2 — CPU temperature dashboard and transparent VRM diagnostics
+
+Adds real CPU package temperature to the main hardware row alongside CPU usage, GPU, VRAM, RAM, GPU power, GPU temperature, GPU VRM temperature and motherboard VRM temperature. The nine cards wrap responsively on narrower viewports. Internal LibreHardwareMonitor sensor names now recognize more voltage-regulator aliases and provide a read-only listing of actual temperature sensors discovered on the device when a VRM reading is missing. A GPU/motherboard without an exposed VRM sensor will continue to show —; no estimate or fabricated value is ever displayed.
+
+All existing six skins, RTSS controls, OSD, installed game discovery and RAM readiness remain intact.
