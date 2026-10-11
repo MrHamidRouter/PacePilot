@@ -15,7 +15,7 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /out:Bin\PacePilot-test.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /out:Bin\PacePilot-test.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs
       - name: English and Persian UI self-test
         shell: powershell
         run: |
@@ -28,7 +28,7 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /win32manifest:Assets\PacePilot.Administrator.manifest /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /win32manifest:Assets\PacePilot.Administrator.manifest /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs
       - name: Pack a single ready-to-use Windows ZIP
         shell: powershell
         run: |
@@ -54,7 +54,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $repo = $env:GITHUB_REPOSITORY
-          $tag = 'v2.4.0'
+          $tag = 'v2.4.1'
           $package = 'dist/PacePilot-Windows-x64.zip'
           if (-not (Test-Path $package)) { throw 'Release ZIP missing' }
           # Listing releases succeeds with an empty array on first publication.
@@ -68,6 +68,6 @@ jobs:
             gh release upload $tag $package --clobber --repo $repo
           } else {
             Write-Host "Creating first release $tag"
-            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.4.0' --notes 'PacePilot v2.4.0 premium UI: mockup screenshots are no longer used as wallpaper. Native vector hero, gradient sidebar, scalable theme previews and six functional palettes. Existing FPS, OSD, game library, hardware monitoring, RAM readiness and update checks are preserved.' --latest
+            gh release create $tag $package --repo $repo --target $env:GITHUB_SHA --title 'PacePilot Studio 2.4.1' --notes 'PacePilot v2.4.1 GPU telemetry reliability: improved HWiNFO GPU, power, VRAM and VRM sensor aliases, added optional Libre/OpenHardwareMonitor WMI and Windows GPU utilization/memory performance-counter fallback; clear on-screen help when a sensor is missing. Keeps the v2.4 premium UI, limiter, OSD and all game profiles. Some motherboards cannot report VRM temperature.' --latest
           }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publish failed' }

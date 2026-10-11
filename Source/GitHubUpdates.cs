@@ -18,12 +18,12 @@ namespace PacePilot
     public static class GitHubUpdates
     {
         public const string Api="https://api.github.com/repos/MrHamidRouter/PacePilot/releases/latest";
-        public static readonly Version Current=new Version(2,4,0);
+        public static readonly Version Current=new Version(2,4,1);
         public static GitHubRelease Check()
         {
             using(WebClient client=new WebClient())
             {
-                client.Headers.Add(HttpRequestHeader.UserAgent,"PacePilot/2.4.0");
+                client.Headers.Add(HttpRequestHeader.UserAgent,"PacePilot/2.4.1");
                 client.Headers.Add(HttpRequestHeader.Accept,"application/vnd.github+json");
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
                 string json=client.DownloadString(Api);
@@ -45,7 +45,7 @@ namespace PacePilot
         }
         public static bool SelfTest()
         {
-            return IsNewer(new GitHubRelease{Tag="v2.4.1",Url="https://github.com/MrHamidRouter/PacePilot/releases/tag/v2.4.1"}) &&
+            return IsNewer(new GitHubRelease{Tag="v2.4.2",Url="https://github.com/MrHamidRouter/PacePilot/releases/tag/v2.4.2"}) &&
               !IsNewer(new GitHubRelease{Tag="v2.0.2",Url="https://github.com/MrHamidRouter/PacePilot/releases/tag/v2.0.2"}) &&
               !IsNewer(new GitHubRelease{Tag="v2.4.0",Url="https://untrusted.example/releases/tag/v2.4.0"});
         }
