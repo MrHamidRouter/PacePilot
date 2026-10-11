@@ -15,7 +15,7 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /out:Bin\PacePilot-test.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /out:Bin\PacePilot-test.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs
       - name: English and Persian UI self-test
         shell: powershell
         run: |
@@ -28,7 +28,7 @@ jobs:
         shell: cmd
         run: |
           if not exist Bin mkdir Bin
-          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /win32manifest:Assets\PacePilot.Administrator.manifest /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs
+          "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /codepage:65001 /unsafe /optimize+ /win32manifest:Assets\PacePilot.Administrator.manifest /out:Bin\PacePilot.exe /win32icon:Assets\PacePilot.ico /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll /reference:System.Management.dll Source\Program.cs Source\StudioForm.cs Source\GameDiscovery.cs Source\GitHubUpdates.cs Source\RtssOsdBridge.cs Source\HwInfoBridge.cs Source\FrameActivityBar.cs Source\PremiumVisuals.cs Source\HardwareFallback.cs Source\AfterburnerBridge.cs
       - name: Pack a single ready-to-use Windows ZIP
         shell: powershell
         run: |
