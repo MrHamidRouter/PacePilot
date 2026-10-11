@@ -19,6 +19,7 @@ namespace PacePilot
         public double? CpuTemp,CpuClock,GpuLoad,GpuTemp,GpuClock,GpuPower,VramUsed,VramTotal,GpuVrmTemp,VrmTemp;
         public int Count;
         public readonly List<string> TemperatureSources=new List<string>();
+        public readonly List<HardwareSensorRecord> TemperatureSensors=new List<HardwareSensorRecord>();
         public string Status="Sensor engine not yet initialized";
         public NativeSensorValues Copy(){return (NativeSensorValues)MemberwiseClone();}
     }
@@ -47,6 +48,10 @@ namespace PacePilot
                         (cached.TemperatureSources.Count>24?"\n...":"");
                 }
             }
+        }
+        public static List<HardwareSensorRecord> GetTemperatureSensors()
+        {
+            lock(Sync)return new List<HardwareSensorRecord>(cached.TemperatureSensors);
         }
         public static string LibraryPath{get{return Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"LibreHardwareMonitorLib.dll");}}
         static object Property(object instance,string name)
@@ -143,21 +148,32 @@ namespace PacePilot
             if(values==null)yield break;
             foreach(object o in values)if(o!=null)yield return o;
         }
-        static void Visit(object hardware,NativeSensorValues target,int depth)
+        static void Visit(object hardware,NativeSensorValues target,int depth,string rootType,string ancestry)
         {
             if(hardware==null||depth>6)return;
             // Calling Update on each hardware updates all of its sensors.
             Invoke(hardware,"Update");
             string device=Convert.ToString(Property(hardware,"HardwareType"))??"";
+            string hardwarePath=ancestry+" / "+Convert.ToString(Property(hardware,"Name"));
             // Some motherboard temperature sensors live in SuperIO child hardware.
             foreach(object item in Enumerate(hardware,"Sensors"))
             {
                 string type=Convert.ToString(Property(item,"SensorType"))??"";
                 string name=Convert.ToString(Property(item,"Name"))??"";
                 double? value=Number(Property(item,"Value"));
+                // Capture all thermal channels, including channels with no current value.
+                // Stable LHM sensor identifiers are used for manual VRM mapping.
+                if(type=="Temperature")
+                {
+                    string sensorId=Convert.ToString(Property(item,"Identifier"))??"";
+                    target.TemperatureSensors.Add(new HardwareSensorRecord{
+                        Id=sensorId,Name=name,HardwarePath=hardwarePath,RootType=rootType,
+                        CurrentC=value
+                    });
+                }
                 Record(target,device,name,type,value);
             }
-            foreach(object child in Enumerate(hardware,"SubHardware"))Visit(child,target,depth+1);
+            foreach(object child in Enumerate(hardware,"SubHardware"))Visit(child,target,depth+1,rootType,hardwarePath);
         }
         static void OpenIfNeeded()
         {
@@ -190,7 +206,7 @@ namespace PacePilot
                 // Enumerate AMD and NVIDIA discrete GPUs before any integrated Intel graphics.
                 foreach(object device in devices.OrderBy(d=>Priority(Convert.ToString(Property(d,"HardwareType")))))
                 {
-                    try{Visit(device,fresh,0);}
+                    try{Visit(device,fresh,0,Convert.ToString(Property(device,"HardwareType")),"");}
                     catch(Exception ex)
                     {
                         // One inaccessible device must not prevent reporting the others.
