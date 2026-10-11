@@ -445,7 +445,7 @@ namespace PacePilot
                 {
                     using(Pen pen=new Pen(theme.Border))args.Graphics.DrawRectangle(pen,0,0,panel.Width-1,panel.Height-1);
                 };
-                Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,24,7.8f,false,theme.Secondary);
+                Label name=TextAt(panel,en[i],fa[i],7,5,tileW-12,24,8,false,theme.Secondary);
                 Label value=TextAt(panel,"—","—",7,31,tileW-12,36,tileW<98?10:13,true,theme.Accent);
                 dashboardHardware[keys[i]]=value;
             }
